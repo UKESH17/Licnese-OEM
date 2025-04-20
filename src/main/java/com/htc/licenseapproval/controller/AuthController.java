@@ -115,7 +115,9 @@ public class AuthController {
 					userDetails, null, userDetails.getAuthorities());
 			authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 			SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-			return ResponseEntity.status(HttpStatus.ACCEPTED).body("OTP verified successfully");
+			 request.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+
+			return ResponseEntity.status(HttpStatus.ACCEPTED).body("OTP verified successfully \nlogged in successfully");
 		}
 
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
@@ -152,9 +154,21 @@ public class AuthController {
 
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
 	}
+	
+	@PostMapping("/logout")
+	public ResponseEntity<String> logout(HttpServletRequest request) {
+	    HttpSession session = request.getSession(false);
+	    if (session != null) {
+	        session.invalidate(); 
+	    }
+	    SecurityContextHolder.clearContext(); 
+	    return ResponseEntity.ok("Logged out successfully");
+	}
+
 
 	private Authentication authenticate(String userName, String password) {
 		return authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userName, password));
 	}
 
 }
+
