@@ -1,0 +1,478 @@
+package com.htc.licenseapproval.service.implement;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import com.htc.licenseapproval.dto.LicenseApprovalDTO;
+import com.htc.licenseapproval.dto.NewRequestListDTO;
+import com.htc.licenseapproval.dto.RequestDetailsDTO;
+import com.htc.licenseapproval.dto.RequestResponseDTO;
+import com.htc.licenseapproval.dto.ResponseDTO;
+import com.htc.licenseapproval.entity.BUdetails;
+import com.htc.licenseapproval.entity.LicenseDetails;
+import com.htc.licenseapproval.entity.LicenseLogMessages;
+import com.htc.licenseapproval.entity.RequestDetails;
+import com.htc.licenseapproval.entity.RequestHeader;
+import com.htc.licenseapproval.entity.UploadedFile;
+import com.htc.licenseapproval.enums.LicenceStatus;
+import com.htc.licenseapproval.enums.Status;
+import com.htc.licenseapproval.exception.GlobalException;
+import com.htc.licenseapproval.file.compressor.Compressor;
+import com.htc.licenseapproval.mapper.MapperService;
+import com.htc.licenseapproval.repository.BUdetailsRepository;
+import com.htc.licenseapproval.repository.LicenseLogMessagesRepository;
+import com.htc.licenseapproval.repository.RequestDetailsRepository;
+import com.htc.licenseapproval.repository.RequestHeaderRepository;
+import com.htc.licenseapproval.service.RequestHeaderService;
+import com.htc.licenseapproval.utils.DateFormatter;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Slf4j
+public class RequestHeaderServiceImplement implements RequestHeaderService {
+
+    private final GlobalException globalException;
+
+	@Autowired
+	private RequestHeaderRepository requestHeaderRepository;
+
+	@Autowired
+	private MapperService mapperService;
+
+	@Autowired
+	private BUdetailsRepository bUdetailsRepository;
+
+	@Autowired
+	private RequestDetailsRepository requestDetailsRepository;
+	
+	@Autowired
+	private LicenseLogMessagesRepository licenseLogMessagesRepository;
+
+	@Autowired
+	private Compressor compressor;
+
+    RequestHeaderServiceImplement(GlobalException globalException) {
+        this.globalException = globalException;
+    }
+
+	/* FIND */
+
+	@Override
+	public RequestHeader findById(String requestId) {
+		return requestHeaderRepository.findById(requestId)
+				.orElseThrow(() -> new RuntimeException("Request header id not found"));
+	}
+
+	/* REQUEST CREATE AND UPDATE */
+
+	@Override
+	public RequestResponseDTO newRequestHeader(NewRequestListDTO newRequestListDTO, UploadedFile approvalMail) {
+
+		RequestHeader requestHeader = mapperService.toRequestList(newRequestListDTO);
+
+		BUdetails budetails = bUdetailsRepository.findByBu(newRequestListDTO.getBuDetails().getBu())
+				.orElseThrow(() -> new RuntimeException("BU not found"));
+		requestHeader.setApprovalMail(approvalMail);
+		if (newRequestListDTO.getExcelFile() != null) {
+			requestHeader.setExcelFile(newRequestListDTO.getExcelFile());
+		}
+		Set<RequestDetails> requestDetails = new HashSet<>();
+		requestHeader.setBuDetails(budetails);
+		for (RequestDetailsDTO detailDTO : newRequestListDTO.getRequestDetails()) {
+			RequestDetails request = mapperService.toRequestDetails(detailDTO);
+			request.setRequestId(null);
+			request.setApprovalGivenBy("Not yet approved");
+			LicenseDetails licenseDetails = new LicenseDetails();
+			licenseDetails.setLicenseType(detailDTO.getLicenseDetails().getLicenseType());
+			licenseDetails.setLicenceStatus(LicenceStatus.PENDING);
+			licenseDetails.setRequestedDate(
+					DateFormatter.normaliseDate(LocalDateTime.now()));
+			request.setLicenseDetails(licenseDetails);
+			request.setStatus(Status.PENDING);
+			requestDetails.add(request);
+		}
+
+		requestHeader.setRequestDetails(requestDetails);
+		
+		RequestHeader header = requestHeaderRepository.save(requestHeader);
+
+		for (RequestDetails details : header.getRequestDetails()) {
+			details.setRequestHeader(header);
+			requestDetailsRepository.save(details);
+		}
+
+		Set<RequestHeader> set = budetails.getRequests();
+		if(set == null) {
+			set=new HashSet<>();
+		}
+		
+		set.add(requestHeader);
+		budetails.setRequests(set);
+		bUdetailsRepository.save(budetails);
+
+		return mapperService.toResponseDTO(header);
+	}
+
+	@Override
+	public LicenseApprovalDTO requestApproval(String id, Status status) {
+
+		LicenseApprovalDTO approvalDTO = new LicenseApprovalDTO();
+		Set<LicenseDetails> licenseDetailSet = new HashSet<>();
+		
+		
+
+		RequestHeader request = this.findById(id);
+		if (request != null) {
+
+			switch (status) {
+
+			case APPROVED: {
+
+				Set<RequestDetails> requestDetailSet = request.getRequestDetails();
+
+				for (RequestDetails requestDetails :requestDetailSet) {
+
+					requestDetails.setStatus(status);
+					LicenseDetails licenseDetails = requestDetails.getLicenseDetails();
+					licenseDetails.setLicenceStatus(LicenceStatus.ACTIVE);
+					LocalDateTime start = LocalDateTime.now();
+					LocalDateTime end = start.plusMonths(1);
+					licenseDetails.setLicenseStartedDate(start);
+					licenseDetails.setLicenseExpireDate(end);
+					licenseDetailSet.add(licenseDetails);
+
+					requestDetails.setApprovalGivenBy("Ukesh");
+					requestDetails.setLicenseDetails(licenseDetails);
+					
+					LicenseLogMessages logMessages =  new LicenseLogMessages();
+					logMessages.setLoggedDate(DateFormatter.normaliseDate(LocalDateTime.now()));
+					logMessages.setLogMessages("Request Approval Status -> "+status+" for request details id "+id+" by Ukesh");
+					logMessages.setRequestDetails(requestDetails);
+					licenseLogMessagesRepository.save(logMessages);
+
+				}
+
+				approvalDTO.setRequestHeaderId(id);
+				approvalDTO.setLicenseDetailsDTOs(
+						licenseDetailSet.stream().map(mapperService::toLicenseDTO).collect(Collectors.toSet()));
+				approvalDTO.setMessage("License request approved");
+				approvalDTO.setApprovalGivenBy("Ukesh");
+
+				request.setRequestDetails(requestDetailSet);
+				
+				
+				
+
+				break;
+			}
+			case REJECTED: {
+
+				Set<RequestDetails> requestDetailSet = request.getRequestDetails();
+
+				for (RequestDetails requestDetails : requestDetailSet) {
+
+					requestDetails.setStatus(status);
+					LicenseDetails licenseDetails = requestDetails.getLicenseDetails();
+					licenseDetails.setLicenceStatus(LicenceStatus.PENDING);
+					licenseDetails.setLicenseStartedDate(null);
+					licenseDetails.setLicenseExpireDate(null);
+					request.setRequestDetails(requestDetailSet);
+					
+					LicenseLogMessages logMessages =  new LicenseLogMessages();
+					logMessages.setLoggedDate(DateFormatter.normaliseDate(LocalDateTime.now()));
+					logMessages.setLogMessages("Request Approval Status -> "+status+" for request details id "+id+" by Ukesh");
+					logMessages.setRequestDetails(requestDetails);
+					licenseLogMessagesRepository.save(logMessages);
+
+				}
+
+				approvalDTO.setRequestHeaderId(id);
+				approvalDTO.setLicenseDetailsDTOs(
+						licenseDetailSet.stream().map(mapperService::toLicenseDTO).collect(Collectors.toSet()));
+				approvalDTO.setMessage("License request rejected");
+				approvalDTO.setApprovalGivenBy("Not yet Approved");
+
+				request.setRequestDetails(requestDetailSet);
+
+				break;
+			}
+			case PENDING: {
+
+				Set<RequestDetails> requestDetailSet = request.getRequestDetails();
+
+				for (RequestDetails requestDetails : requestDetailSet) {
+
+					requestDetails.setStatus(status);
+					LicenseDetails licenseDetails = requestDetails.getLicenseDetails();
+					licenseDetails.setLicenceStatus(LicenceStatus.PENDING);
+					licenseDetails.setLicenseStartedDate(null);
+					licenseDetails.setLicenseExpireDate(null);
+					request.setRequestDetails(requestDetailSet);
+					
+					LicenseLogMessages logMessages =  new LicenseLogMessages();
+					logMessages.setLoggedDate(DateFormatter.normaliseDate(LocalDateTime.now()));
+					logMessages.setLogMessages("Request Approval Status -> "+status+" for request details id "+id+" by Ukesh");
+					logMessages.setRequestDetails(requestDetails);
+					licenseLogMessagesRepository.save(logMessages);
+
+				}
+
+				approvalDTO.setRequestHeaderId(id);
+				approvalDTO.setLicenseDetailsDTOs(
+						licenseDetailSet.stream().map(mapperService::toLicenseDTO).collect(Collectors.toSet()));
+				approvalDTO.setMessage("License request Pending");
+				approvalDTO.setApprovalGivenBy("Not yet Approved");
+
+				request.setRequestDetails(requestDetailSet);
+
+				break;
+			}
+
+			default:
+				throw new IllegalArgumentException("Unexpected value: " + status);
+			}
+
+			requestHeaderRepository.save(request);
+			return approvalDTO;
+		}
+
+		throw new RuntimeException("Request not found");
+	}
+
+	/* FILE RETRIEVAL */
+
+	@Override
+	public byte[] getApprovalMail(String requestId) throws IOException {
+		return compressor.decompress(this.findById(requestId).getApprovalMail().getFileData());
+	}
+
+	@Override
+	public byte[] getExcelFile(String requestId) throws IOException {
+		return compressor.decompress(this.findById(requestId).getExcelFile().getFileData());
+	}
+
+	/* ALL REQUEST DATA */
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> totalRequestPerBU(String name) {
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+		List<RequestResponseDTO> list = bUdetailsRepository.findByBu(name).get().getRequests().stream()
+				.map(mapperService::toResponseDTO).collect(Collectors.toList());
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+	}
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> totalRequest() {
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+
+		List<RequestResponseDTO> list = requestHeaderRepository.findAll().stream().map(mapperService::toResponseDTO)
+				.collect(Collectors.toList());
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+
+	}
+
+	@Override
+	public List<RequestDetails> getAllRequestLists() {
+		return this.requestDetailsRepository.findAll();
+	}
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> totalRequestsByEmp(Long empid) {
+
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+		List<RequestResponseDTO> list = this.getAllRequestLists().stream().filter(t -> t.getEmpid().equals(empid))
+				.map(mapperService::toResponseDTO).collect(Collectors.toList());
+
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+
+	}
+
+	/* LICENSE AND REQUEST STAUS METHOD */
+
+	private ResponseDTO<List<RequestDetails>> allConsumedLicense() {
+
+		List<RequestDetails> list = this.getAllRequestLists().stream()
+				.filter(t -> !t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.PENDING))
+				.collect(Collectors.toList());
+		ResponseDTO<List<RequestDetails>> response = new ResponseDTO<>();
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+
+	}
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> allActiveLicense() {
+
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
+				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.ACTIVE))
+				.map(mapperService::toResponseDTO).collect(Collectors.toList());
+
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+	}
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> allPendingLicense() {
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
+				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.PENDING))
+				.map(mapperService::toResponseDTO).collect(Collectors.toList());
+
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+	}
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> allExpireSoonLicense() {
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
+				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.EXPIRING_SOON))
+				.map(mapperService::toResponseDTO).collect(Collectors.toList());
+
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+	}
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> allExpiredLicense() {
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
+				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.EXPIRED))
+				.map(mapperService::toResponseDTO).collect(Collectors.toList());
+
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+	}
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> pendingRequest() {
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
+				.filter(t -> t.getStatus().equals(Status.PENDING)).map(mapperService::toResponseDTO)
+				.collect(Collectors.toList());
+
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+	}
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> rejectedRequest() {
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
+				.filter(t -> t.getStatus().equals(Status.REJECTED)).map(mapperService::toResponseDTO)
+				.collect(Collectors.toList());
+
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+	}
+
+	@Override
+	public ResponseDTO<List<RequestResponseDTO>> approvedRequest() {
+		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
+				.filter(t -> t.getStatus().equals(Status.APPROVED)).map(mapperService::toResponseDTO)
+				.collect(Collectors.toList());
+
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+	}
+
+	/* REPORT */
+
+	@Override
+	public Map<Month, Integer> quarterlyReport() {
+		Month present = LocalDateTime.now().getMonth();
+		List<RequestDetails> allActiveLicense = this.allConsumedLicense().getData();
+		Map<Month, Integer> quarterlyReport = new HashMap<>();
+
+		for (int i = 0; i < 3; i++) {
+			quarterlyReport.put(present.minus(i), 0);
+		}
+
+		for (RequestDetails request : allActiveLicense) {
+
+			Month monthKey = request.getLicenseDetails().getLicenseStartedDate().getMonth();
+
+			if (quarterlyReport.containsKey(monthKey)) {
+
+				quarterlyReport.put(monthKey, quarterlyReport.get(monthKey) + 1);
+
+			}
+
+		}
+
+		return quarterlyReport;
+	}
+
+	@Override
+	public Map<Month, Integer> annualReport() {
+		Map<Month, Integer> annualReport = new LinkedHashMap<>();
+
+		for (Month month : Month.values()) {
+			annualReport.put(month, 0);
+		}
+		this.allConsumedLicense().getData().stream().map(request -> request.getLicenseDetails().getLicenseStartedDate())
+				.filter(Objects::nonNull).map(LocalDateTime::getMonth)
+				.forEach(month -> annualReport.merge(month, 1, Integer::sum));
+
+		return annualReport;
+	}
+
+	@Scheduled(fixedDelay = 43200000)
+	private void updateLicenseStatus() {
+		List<RequestDetails> activeLicenses = this.allConsumedLicense().getData();
+
+		if (!activeLicenses.isEmpty())
+			activeLicenses.forEach(license -> {
+				
+		
+
+
+				long daysRemaining = ChronoUnit.DAYS.between(LocalDateTime.now(),
+						license.getLicenseDetails().getLicenseExpireDate());
+				if (daysRemaining < 0 && !license.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.EXPIRED)) {
+					license.getLicenseDetails().setLicenceStatus(LicenceStatus.EXPIRED);
+					log.info("Scheduled task license updated  : " + LicenceStatus.EXPIRED);
+				} else if (daysRemaining <= 5 && license.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.ACTIVE)) {
+					log.info("Scheduled task license updated  : " + LicenceStatus.EXPIRING_SOON);
+					license.getLicenseDetails().setLicenceStatus(LicenceStatus.EXPIRING_SOON);
+				}
+
+				requestDetailsRepository.save(license);
+			});
+
+	}
+
+}
