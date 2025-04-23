@@ -173,7 +173,14 @@ public class AuthController {
 			logRepository.save(userLog);
 			otpService.removeOtp(username);
 			return ResponseEntity.status(HttpStatus.ACCEPTED)
+<<<<<<< HEAD
 					.body("OTP verified successfully \nlogged in successfully");
+=======
+					.body("OTP verified successfully \nlogged in successfully");	
+
+			return ResponseEntity.status(HttpStatus.ACCEPTED).body("OTP verified successfully \nlogged in successfully");
+
+>>>>>>> 03b42d0346e5af0bdf2f95bb57c312a34f1058c4
 		}
 
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
