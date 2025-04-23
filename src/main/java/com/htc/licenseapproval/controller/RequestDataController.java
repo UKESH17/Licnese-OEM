@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.htc.licenseapproval.dto.CoursesDTO;
+import com.htc.licenseapproval.dto.RequestDetailsDTO;
 import com.htc.licenseapproval.dto.RequestResponseDTO;
 import com.htc.licenseapproval.dto.ResponseDTO;
 import com.htc.licenseapproval.entity.LicenseLogMessages;
@@ -158,5 +159,10 @@ public class RequestDataController {
     @GetMapping("/LicenseLogs/{requestId}")
     public ResponseEntity<Set<LicenseLogMessages>> licenseLogMessages(@PathVariable String requestId) {
         return new ResponseEntity<>(requestDetailsService.licenseLogPerRequestId(requestId), HttpStatus.ACCEPTED);
+    }
+    
+    @GetMapping("/overallReport")
+    public ResponseEntity<Map<Long,List<RequestDetailsDTO>>> overallReport(){
+    	return ResponseEntity.ok(requestDetailsService.totalReport());
     }
 }

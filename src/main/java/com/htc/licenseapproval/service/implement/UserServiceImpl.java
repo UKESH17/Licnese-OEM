@@ -23,7 +23,7 @@ public class UserServiceImpl implements UserService{
 	private UserCredentialsRepository credentialsRepository;
 	
 	@Autowired
-    PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
 
 	@Override
@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService{
         }
 		credentials.setPassword(passwordEncoder.encode(credentials.getPassword()));
 		return credentialsRepository.save(credentials) ;
-	}
+	} 
 
 	@Override
 	public String deleteUser(String username) {
@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService{
 	    credentialsRepository.delete(cred);
 	    return "Deleted successfully ";
 	}
-
+	
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		UserCredentials userCred =credentialsRepository.findById(username).orElseThrow(()->new RuntimeException("user not found with username : "+username));
@@ -54,13 +54,20 @@ public class UserServiceImpl implements UserService{
 
 	@Override
 	public UserCredentials findByUsername(String username) {
-		return credentialsRepository.findByUsername(username).orElseThrow(()-> new RuntimeException("user not found with username - "+username));
+		return credentialsRepository.findById(username).orElseThrow(()-> new RuntimeException("user not found with username - "+username));
 	}
 
 	@Override
 	public UserCredentials updatePassword(String username, String password) {
 		UserCredentials cred = credentialsRepository.findById(username).orElseThrow(()->new RuntimeException("user not found with username : "+username));
 		cred.setPassword(passwordEncoder.encode(password));
+		return credentialsRepository.save(cred);
+	}
+
+	@Override
+	public UserCredentials updateEmail(String username, String email) {
+		UserCredentials cred = credentialsRepository.findById(username).orElseThrow(()->new RuntimeException("user not found with username : "+username));
+		cred.setEmail(email);
 		return credentialsRepository.save(cred);
 	}
 

@@ -8,10 +8,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
 @Entity
-@Data
+@Builder
+@Getter
 public class UserLog {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

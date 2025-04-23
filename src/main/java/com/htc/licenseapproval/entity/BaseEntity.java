@@ -33,4 +33,5 @@ public class BaseEntity {
 
 	@LastModifiedDate
 	private LocalDateTime updatedDate;
+	
 }

@@ -2,7 +2,10 @@ package com.htc.licenseapproval.service.implement;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -18,7 +21,6 @@ import com.htc.licenseapproval.entity.LicenseLogMessages;
 import com.htc.licenseapproval.entity.RequestDetails;
 import com.htc.licenseapproval.file.compressor.Compressor;
 import com.htc.licenseapproval.mapper.MapperService;
-import com.htc.licenseapproval.repository.CoursesRepository;
 import com.htc.licenseapproval.repository.LicenseLogMessagesRepository;
 import com.htc.licenseapproval.repository.RequestDetailsRepository;
 import com.htc.licenseapproval.repository.UploadedFileRepository;
@@ -43,9 +45,6 @@ public class RequestDetailsServiceImplement implements RequestDetailsService {
 	@Autowired
 	private Compressor compressor;
 	
-	@Autowired
-	private CoursesRepository coursesRepository;
-
 	/* FIND */
 
 	@Override
@@ -115,6 +114,41 @@ public class RequestDetailsServiceImplement implements RequestDetailsService {
 	@Override
 	public Set<LicenseLogMessages> licenseLogPerRequestId(String requestID) {
 		return this.findById(requestID).getLicenseLogMessages();
+	}
+
+	@Override
+	public int totalEnrollmentcount(Long employeeId) {	
+		return this.allRequestDetailsByEmployeeId(employeeId).size();
+	}
+	
+	@Override
+	public List<RequestDetails> allRequestDetailsByEmployeeId(Long employeeId){
+		return requestDetailsRepository.findAllByEmpid(employeeId);
+	}
+	
+
+	@Override
+	public Map<Long, List<RequestDetailsDTO>> totalReport() {
+		Map<Long, List<RequestDetailsDTO>> totalReport = new HashMap<>();
+		for(RequestDetails requestDetails : requestDetailsRepository.findAll()) {
+			Long empId =requestDetails.getEmpid();
+			if(!totalReport.containsKey(empId)){
+				totalReport.put(empId, this.allRequestDetailsByEmployeeId(empId).stream().map( mapperService::toRequestDetailsDTO).collect(Collectors.toList()));
+			}
+		}
+		return totalReport;
+	}
+	
+	@Override
+	public Map<Long, List<RequestDetails>> totalReports() {
+		Map<Long, List<RequestDetails>> totalReport = new HashMap<>();
+		for(RequestDetails requestDetails : requestDetailsRepository.findAll()) {
+			Long empId =requestDetails.getEmpid();
+			if(!totalReport.containsKey(empId)){
+				totalReport.put(empId, this.allRequestDetailsByEmployeeId(empId));
+			}
+		}
+		return totalReport;
 	}
 
 }

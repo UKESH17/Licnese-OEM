@@ -12,7 +12,6 @@ import com.htc.licenseapproval.entity.UserCredentials;
 import com.htc.licenseapproval.repository.OTPrepository;
 import com.htc.licenseapproval.repository.UserCredentialsRepository;
 import com.htc.licenseapproval.service.UserService;
-import com.htc.licenseapproval.utils.OtpGenerator;
 
 @Service
 public class OTPservice {
@@ -30,11 +29,14 @@ public class OTPservice {
     private int otpExpiryMinutes = 2;
 
     public OTP generateOTP(UserCredentials user) {
+    	if(!user.isOTPenabled()) {
     	OTP otp = new OTP(); 
         otp.setOtp(OtpGenerator.generateOTP());
         otp.setExpiryAt(LocalDateTime.now().plusMinutes(otpExpiryMinutes));
         otp.setUser(user);
 		return otpRepository.save(otp);
+    	}
+    	throw new RuntimeException("OTP already sent");
                 
     }
     
@@ -42,7 +44,7 @@ public class OTPservice {
     	
     	OTP savedOtp = otpRepository.findOtpByUserUsername(username);
     	if(savedOtp==null) {
-    		throw new RuntimeException("OTP not found , get otp again");
+    		throw new RuntimeException("Incorrect OTP or Expired OTP");
     	}
     	if(savedOtp.getExpiryAt().isBefore(LocalDateTime.now())){
     		UserCredentials user =userService.findByUsername(username);

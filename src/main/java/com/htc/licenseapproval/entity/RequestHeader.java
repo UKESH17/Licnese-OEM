@@ -52,7 +52,7 @@ public class RequestHeader extends BaseEntity{
 	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private UploadedFile excelFile;
 	
-	@OneToMany(cascade = CascadeType.ALL, mappedBy = "requestHeader", fetch = FetchType.EAGER)
+	@OneToMany(mappedBy = "requestHeader", fetch = FetchType.EAGER)
 	private Set<RequestDetails> requestDetails;
 	
 

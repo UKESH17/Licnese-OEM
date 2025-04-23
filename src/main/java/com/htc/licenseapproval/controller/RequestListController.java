@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -20,18 +21,20 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.htc.licenseapproval.dto.BUdetailsDTO;
 import com.htc.licenseapproval.dto.ChangeExpireData;
 import com.htc.licenseapproval.dto.CoursesDTO;
 import com.htc.licenseapproval.dto.LicenseApprovalDTO;
 import com.htc.licenseapproval.dto.NewRequestListDTO;
 import com.htc.licenseapproval.dto.RequestDetailsDTO;
 import com.htc.licenseapproval.dto.RequestResponseDTO;
+import com.htc.licenseapproval.entity.BUdetails;
 import com.htc.licenseapproval.entity.Courses;
 import com.htc.licenseapproval.entity.UploadedFile;
 import com.htc.licenseapproval.enums.RequestType;
 import com.htc.licenseapproval.enums.Status;
 import com.htc.licenseapproval.file.compressor.Compressor;
-import com.htc.licenseapproval.mapper.MapperService;
+import com.htc.licenseapproval.repository.BUdetailsRepository;
 import com.htc.licenseapproval.response.BaseResponse;
 import com.htc.licenseapproval.service.ExcelService;
 import com.htc.licenseapproval.service.RequestDetailsService;
@@ -39,7 +42,6 @@ import com.htc.licenseapproval.service.RequestHeaderService;
 import com.htc.licenseapproval.utils.DateFormatter;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,7 +65,8 @@ public class RequestListController {
 	private ExcelService excelService;
 	
 	@Autowired
-	private MapperService mapperService;
+	private BUdetailsRepository buRepository;
+	
 
 	@Operation(summary = "For cheecking purpose", description = "Sample endpoint")
 	@PostMapping(value = "/check")
@@ -164,4 +167,18 @@ public class RequestListController {
 		}
 		return ResponseEntity.ok(requestDetailsService.addCourses(requestDetailsId, courses));
 	}
+	
+	@PostMapping("/addBU")
+	public ResponseEntity<BUdetails> addBU(@RequestBody BUdetailsDTO bu){
+		BUdetails bUdetails = new BUdetails();
+		bUdetails.setBu(bu.getBu());
+		bUdetails.setBuHead(bu.getBuHead());
+		bUdetails.setBuDeliveryHead(bu.getBuDeliveryHead());
+		return ResponseEntity.ok(buRepository.save(bUdetails));
+	} 
+	
+	@PostMapping(value="/excel/addAllBU", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<Set<BUdetailsDTO>> addBUbyExcel(@RequestPart("bu-excel") MultipartFile file){ 
+		return ResponseEntity.ok(excelService.readExcelAndProcessforBudetails(file));
+	} 
 }

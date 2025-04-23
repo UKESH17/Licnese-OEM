@@ -30,6 +30,8 @@ public class BUdetails{
 	@Column(name = "BU_Head", nullable = false)
 	private String buHead;
 	
+	private String buDeliveryHead;
+	
 	@OneToMany(mappedBy = "buDetails")
 	@JsonIgnore
 	private Set<RequestHeader> requests;

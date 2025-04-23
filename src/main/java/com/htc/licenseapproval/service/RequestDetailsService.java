@@ -1,6 +1,8 @@
 package com.htc.licenseapproval.service;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.htc.licenseapproval.dto.ChangeExpireData;
@@ -24,6 +26,18 @@ public interface RequestDetailsService {
 	public Set<LicenseLogMessages> licenseLogPerRequestId(String requestID);
 
 	public RequestResponseDTO changeExpireDate(String requestID, ChangeExpireData changeExpiredDateDTO);
+	
+	public int totalEnrollmentcount(Long employeeId);
+	
+	//for controller usage
+	public Map<Long, List<RequestDetailsDTO>> totalReport();
+
+	public List<RequestDetails> allRequestDetailsByEmployeeId(Long employeeId);
+
+	//for excel usage
+	public Map<Long, List<RequestDetails>> totalReports();
+
+
 
 	
 }

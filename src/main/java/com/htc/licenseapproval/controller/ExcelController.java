@@ -1,118 +1,114 @@
-//package com.htc.licenseapproval.controller;
-//
-//import java.io.IOException;
-//import java.io.InputStream;
-//import java.net.HttpURLConnection;
-//import java.net.MalformedURLException;
-//import java.net.URL;
-//import java.time.LocalDateTime;
-//import java.util.Iterator;
-//
-//import org.apache.poi.ss.usermodel.Row;
-//import org.apache.poi.ss.usermodel.Sheet;
-//import org.apache.poi.ss.usermodel.Workbook;
-//import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.core.io.ByteArrayResource;
-//import org.springframework.http.HttpHeaders;
-//import org.springframework.http.HttpStatus;
-//import org.springframework.http.MediaType;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.web.bind.annotation.CrossOrigin;
-//import org.springframework.web.bind.annotation.GetMapping;
-//import org.springframework.web.bind.annotation.PostMapping;
-//import org.springframework.web.bind.annotation.RequestMapping;
-//import org.springframework.web.bind.annotation.RequestParam;
-//import org.springframework.web.bind.annotation.RequestPart;
-//import org.springframework.web.bind.annotation.RestController;
-//import org.springframework.web.multipart.MultipartFile;
-//
-//import com.htc.licenseapproval.service.ExcelService;
-//
-//import lombok.extern.slf4j.Slf4j;
-//
-//@RestController
-//@Slf4j
-//@RequestMapping("/licenseApproval/approvalRequest")
-//@CrossOrigin(origins="http://localhost:5173")
-//public class ExcelController {
-//
-//
-//	@Autowired
-//    private ExcelService excelServiceImplement;
-//
-//
-////@GetMapping(value = "/download/{fileName}", produces = MediaType.APPLICATION_PDF_VALUE)
-////public ResponseEntity<byte[]> downloadAllCertificates(@PathVariable String fileName) throws IOException {
-////	byte[] approvalMail = requestListService.getApprovalMail(requestId);
-////	return new ResponseEntity<>(approvalMail, HttpStatus.ACCEPTED);
-////
-////}
-//
-////@GetMapping(value = "/download/allCertificates/{requestId}", produces = MediaType.APPLICATION_PDF_VALUE)
-////public ResponseEntity<List<Courses>> downloadAllCertificates(@PathVariable Long requestId) throws IOException {
-////	byte[] approvalMail = requestListService.getApprovalMail(requestId);
-////	return new ResponseEntity<>(approvalMail, HttpStatus.ACCEPTED);
-////
-////}
-//
-//
-//	@GetMapping(value = "/excelReport/download",produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-//	public ResponseEntity<ByteArrayResource> download() {
-//		ByteArrayResource resource = new ByteArrayResource(excelServiceImplement.downloadExcel());
-//
-//		return ResponseEntity.ok()
-//				.header(HttpHeaders.CONTENT_DISPOSITION,
-//						"attachment; filename=LicenseRequests_" + LocalDateTime.now() + ".xlsx")
-////				.contentType(
-////						MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-//				.body(resource);
-//
-//	}
-//	
-//	@PostMapping("/excelReport/upload")
-//	public ResponseEntity<String> uploadNewLicenseRequestExcel(@RequestPart("Excel-file") MultipartFile file) {
-//		if (file.isEmpty()) {
-//			return ResponseEntity.badRequest().body("Please upload a file!");
-//		}
-//
-//		String fileName = file.getOriginalFilename();
-//		if (fileName != null && !(fileName.endsWith(".xls") || fileName.endsWith(".xlsx"))) {
-//			return ResponseEntity.badRequest()
-//					.body("Invalid file format! Please upload an Excel file (.xls or .xlsx).");
-//		}
-//		excelServiceImplement.readExcelAndProcess(file);
-//		return ResponseEntity.ok("Excel successfully uploaded");
-//		
-//
-//	}
+package com.htc.licenseapproval.controller;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.htc.licenseapproval.entity.UserLog;
+import com.htc.licenseapproval.repository.LogRepository;
+import com.htc.licenseapproval.service.ExcelService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+
+@RestController
+@Slf4j
+@RequestMapping("/licenseApproval/approvalRequest")
+@CrossOrigin(origins = "http://localhost:5173")
+@Tag(name = "Excel Api", description = "For Handling Excels")
+public class ExcelController {
+
+	@Autowired
+	private ExcelService excelService;
+
+	@Autowired
+	private LogRepository logRepository;
+
+	@GetMapping(value = "/excelReport/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+	@Operation(summary = "Overall Excel report")
+	public ResponseEntity<ByteArrayResource> overallReport() {
+		ByteArrayResource resource = new ByteArrayResource(excelService.downloadExcel());
+
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+		UserLog userLog = UserLog.builder().logDetails("Overall repost excel downloaded by -> " + username)
+				.loggedTime(LocalDateTime.now()).build();
+
+		logRepository.save(userLog);
+
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION,
+						"attachment; filename=OverallReport-" + LocalDate.now() + ".xlsx")
+				.contentType(
+						MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+				.body(resource);
+
+	}
+
+	@PostMapping("/excelRequest/upload")
+	@Operation(summary = "UPLOAD Excel requests with the help of microsoft form")
+	public ResponseEntity<String> uploadNewLicenseRequestExcel(@RequestPart("Excel-file") MultipartFile file) {
+		if (file.isEmpty()) {
+			return ResponseEntity.badRequest().body("Please upload a file!");
+		}
+
+		String fileName = file.getOriginalFilename();
+		if (fileName != null && !(fileName.endsWith(".xls") || fileName.endsWith(".xlsx"))) {
+			return ResponseEntity.badRequest()
+					.body("Invalid file format! Please upload an Excel file (.xls or .xlsx).");
+		}
+		excelService.readExcelAndProcess(file);
+
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+		UserLog userLog = UserLog.builder().logDetails("Microsoft excel license request uploaded by -> " + username)
+				.loggedTime(LocalDateTime.now())
+				.build();
+
+		logRepository.save(userLog);
+
+		return ResponseEntity.ok("Excel successfully uploaded");
+
+	}
 //
 ////Microsoft form 
+////yet to do
+//	@PostMapping
+//	public ResponseEntity<String> microsoftExcel(@RequestPart MultipartFile file)
+//			throws MalformedURLException, IOException {
 //
-////@PostMapping
-////public ResponseEntity<String> microsoftExcel(@RequestPart MultipartFile file) throws MalformedURLException, IOException{
-////	
-////		 Workbook workbook = new XSSFWorkbook(file.getInputStream());		            
-////	            // Read first sheet
-////	            Sheet sheet = workbook.getSheetAt(0);
-////	            Iterator<Row> rowIterator = sheet.iterator();
-////	            rowIterator.next();
-////	            Row row = rowIterator.next();         
-////		
-////		String pdfPath = row.getCell(15).getStringCellValue();
-////		
-////		 HttpURLConnection connection = (HttpURLConnection) new URL(pdfPath).openConnection();
-////	        connection.setRequestMethod("POST");
-////	        
-////		
-////		
-////
-////	return null;
-////	
-////}
+//		Workbook workbook = new XSSFWorkbook(file.getInputStream());
+//		// Read first sheet
+//		Sheet sheet = workbook.getSheetAt(0);
+//		Iterator<Row> rowIterator = sheet.iterator();
+//		rowIterator.next();
+//		Row row = rowIterator.next();
+//
+//		String pdfPath = row.getCell(15).getStringCellValue();
+//
+//		HttpURLConnection connection = (HttpURLConnection) new URL(pdfPath).openConnection();
+//		connection.setRequestMethod("POST");
+//
+//		return null;
+//
+//	}
 //
 ////FOR GOOGLE FORMS
-//
+////Not in use
 //	@GetMapping(value = "/excelupload/url", produces = MediaType.APPLICATION_PDF_VALUE)
 //	public ResponseEntity<byte[]> accessExcel(@RequestParam String url) {
 //		try {
@@ -137,7 +133,7 @@
 //				if (!rowIterator.hasNext()) {
 //					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
 //				}
-//				
+//
 //				rowIterator.next(); // Skip header row
 //				if (!rowIterator.hasNext()) {
 //					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
@@ -167,4 +163,4 @@
 //			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 //		}
 //	}
-//}
+}

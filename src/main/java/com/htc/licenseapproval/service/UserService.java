@@ -12,5 +12,8 @@ public interface UserService extends UserDetailsService{
 	
 	public UserCredentials findByUsername(String username);
 
-	public UserCredentials updatePassword(String username, String username2);
+	public UserCredentials updatePassword(String username, String password);
+	
+	public UserCredentials updateEmail(String username, String email);
+	
 }

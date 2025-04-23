@@ -8,12 +8,14 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.htc.licenseapproval.dto.BUdetailsDTO;
 import com.htc.licenseapproval.dto.CoursesDTO;
 import com.htc.licenseapproval.dto.DownloadResponse;
 import com.htc.licenseapproval.dto.LicenseDetailsDTO;
 import com.htc.licenseapproval.dto.NewRequestListDTO;
 import com.htc.licenseapproval.dto.RequestDetailsDTO;
 import com.htc.licenseapproval.dto.RequestResponseDTO;
+import com.htc.licenseapproval.entity.BUdetails;
 import com.htc.licenseapproval.entity.Courses;
 import com.htc.licenseapproval.entity.LicenseDetails;
 import com.htc.licenseapproval.entity.RequestDetails;
@@ -118,4 +120,8 @@ public class MapperService {
 		return modelMapper.map(detailsDTO, LicenseDetailsDTO.class);
 	}
 
+	
+	public BUdetailsDTO toBUdetailsDTO(BUdetails bUdetails) {
+		return modelMapper.map(bUdetails, BUdetailsDTO.class);
+	}
 }

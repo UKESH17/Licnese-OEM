@@ -4,12 +4,15 @@ import java.util.Set;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.htc.licenseapproval.dto.BUdetailsDTO;
 import com.htc.licenseapproval.dto.RequestDetailsDTO;
 
 public interface ExcelService {
 
 	public Set<RequestDetailsDTO> readExcelAndProcess(MultipartFile file);
 
-	//public byte[] downloadExcel();
+	public byte[] downloadExcel();
+
+	public Set<BUdetailsDTO> readExcelAndProcessforBudetails(MultipartFile file);
 
 }

@@ -3,7 +3,6 @@ package com.htc.licenseapproval.service.implement;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.Month;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,10 +12,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.htc.licenseapproval.dto.LicenseApprovalDTO;
@@ -32,7 +31,6 @@ import com.htc.licenseapproval.entity.RequestHeader;
 import com.htc.licenseapproval.entity.UploadedFile;
 import com.htc.licenseapproval.enums.LicenceStatus;
 import com.htc.licenseapproval.enums.Status;
-import com.htc.licenseapproval.exception.GlobalException;
 import com.htc.licenseapproval.file.compressor.Compressor;
 import com.htc.licenseapproval.mapper.MapperService;
 import com.htc.licenseapproval.repository.BUdetailsRepository;
@@ -48,7 +46,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RequestHeaderServiceImplement implements RequestHeaderService {
 
-    private final GlobalException globalException;
 
 	@Autowired
 	private RequestHeaderRepository requestHeaderRepository;
@@ -68,10 +65,6 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	@Autowired
 	private Compressor compressor;
 
-    RequestHeaderServiceImplement(GlobalException globalException) {
-        this.globalException = globalException;
-    }
-
 	/* FIND */
 
 	@Override
@@ -86,14 +79,22 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	public RequestResponseDTO newRequestHeader(NewRequestListDTO newRequestListDTO, UploadedFile approvalMail) {
 
 		RequestHeader requestHeader = mapperService.toRequestList(newRequestListDTO);
-
+		
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
+		
+		requestHeader.setRequestorName(username);
+		
 		BUdetails budetails = bUdetailsRepository.findByBu(newRequestListDTO.getBuDetails().getBu())
 				.orElseThrow(() -> new RuntimeException("BU not found"));
+		
 		requestHeader.setApprovalMail(approvalMail);
+		
 		if (newRequestListDTO.getExcelFile() != null) {
 			requestHeader.setExcelFile(newRequestListDTO.getExcelFile());
 		}
+		
 		Set<RequestDetails> requestDetails = new HashSet<>();
+		
 		requestHeader.setBuDetails(budetails);
 		for (RequestDetailsDTO detailDTO : newRequestListDTO.getRequestDetails()) {
 			RequestDetails request = mapperService.toRequestDetails(detailDTO);
