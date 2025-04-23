@@ -13,6 +13,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
@@ -37,7 +38,7 @@ public class RequestHeader extends BaseEntity{
 	private RequestType requestType;
 
 	@ManyToOne
-	@JsonIgnore
+	@JoinColumn(name = "bu_id")
 	private BUdetails buDetails;
 
 	@Column(name = "approved_manager")

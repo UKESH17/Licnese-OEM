@@ -163,7 +163,6 @@ public class AuthController {
 					userDetails, null, userDetails.getAuthorities());
 			authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 			SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-<<<<<<< HEAD
 			request.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 			request.getSession(true).setMaxInactiveInterval(30*60);
 			UserLog userLog = UserLog.builder ()
@@ -172,14 +171,9 @@ public class AuthController {
 					.build();
 
 			logRepository.save(userLog);
-			
+			otpService.removeOtp(username);
 			return ResponseEntity.status(HttpStatus.ACCEPTED)
 					.body("OTP verified successfully \nlogged in successfully");
-=======
-			 request.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-
-			return ResponseEntity.status(HttpStatus.ACCEPTED).body("OTP verified successfully \nlogged in successfully");
->>>>>>> origin/main
 		}
 
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
@@ -222,7 +216,7 @@ public class AuthController {
 						.build();
 
 				logRepository.save(userLog);
-				
+				otpService.removeOtp(loginRequest.getUsername());
 				return ResponseEntity.status(HttpStatus.ACCEPTED).body("Password changed successfully for username : "+loginRequest.getUsername());
 			}
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Error");
@@ -230,17 +224,6 @@ public class AuthController {
 
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
 	}
-	
-	@PostMapping("/logout")
-	public ResponseEntity<String> logout(HttpServletRequest request) {
-	    HttpSession session = request.getSession(false);
-	    if (session != null) {
-	        session.invalidate(); 
-	    }
-	    SecurityContextHolder.clearContext(); 
-	    return ResponseEntity.ok("Logged out successfully");
-	}
-
 
 	@PostMapping("/logout")
 	public ResponseEntity<String> logout(HttpServletRequest request) {
@@ -269,4 +252,3 @@ public class AuthController {
 	}
 
 }
-

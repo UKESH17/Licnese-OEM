@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.htc.licenseapproval.dto.LicenseApprovalDTO;
 import com.htc.licenseapproval.dto.NewRequestListDTO;
+import com.htc.licenseapproval.dto.RequestDetailsDTO;
 import com.htc.licenseapproval.dto.RequestResponseDTO;
 import com.htc.licenseapproval.dto.ResponseDTO;
 import com.htc.licenseapproval.entity.RequestDetails;
@@ -46,11 +47,15 @@ public interface RequestHeaderService {
 
 	public ResponseDTO<List<RequestResponseDTO>> approvedRequest();
 
-	public Map<Month, Integer> quarterlyReport();
+	public Map<Month, List<RequestDetailsDTO>> quarterlyReport();
 
-	public Map<Month, Integer> annualReport();
+	public Map<Month, List<RequestDetailsDTO>> annualReport();
 
-	public ResponseDTO<List<RequestResponseDTO>> totalRequestPerBU(String name);
+	Map<Month, List<RequestDetailsDTO>> quarterlyReportBYBU(String BU);
+
+	ResponseDTO<List<RequestResponseDTO>> totalRequestPerBU(String name);
+	
+	//Map<String, List<RequestDetailsDTO>> quarterlyReportByBU();
 
 	
 

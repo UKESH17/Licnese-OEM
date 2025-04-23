@@ -1,7 +1,6 @@
 package com.htc.licenseapproval.controller;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -39,7 +38,6 @@ import com.htc.licenseapproval.response.BaseResponse;
 import com.htc.licenseapproval.service.ExcelService;
 import com.htc.licenseapproval.service.RequestDetailsService;
 import com.htc.licenseapproval.service.RequestHeaderService;
-import com.htc.licenseapproval.utils.DateFormatter;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,7 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequestMapping("/licenseApproval/approvalRequest")
 @CrossOrigin(origins = "http://localhost:5173")
-@Tag(name = "License Approval Request APIs", description = "Endpoints for handling license approval requests")
+@Tag(name = "License Approval Request APIs-RequestListController", description = "Endpoints for handling license approval requests")
 public class RequestListController {
 
 	@Autowired
@@ -67,17 +65,6 @@ public class RequestListController {
 	@Autowired
 	private BUdetailsRepository buRepository;
 	
-
-	@Operation(summary = "For cheecking purpose", description = "Sample endpoint")
-	@PostMapping(value = "/check")
-	public LocalDateTime postMethodName(@RequestParam String expiredDate,@RequestParam String reason)
-	{
-		ChangeExpireData changeExpiredDateDTO = new ChangeExpireData(reason, expiredDate);
-		System.out.println(changeExpiredDateDTO);
-
-		return DateFormatter.normaliseDate(changeExpiredDateDTO.getExpireDate());
-	}
-
 	
 	@Operation(summary = "Create new license request", description = "Submit a new license request with approval mail and optional Excel file")
 	@PostMapping(value = "/newRequest", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -86,15 +73,19 @@ public class RequestListController {
 			@RequestPart(value ="approval-mail"
 			,required = true) MultipartFile approvalmail,
 			@RequestPart(value = "excel", required = false) MultipartFile excel) throws IOException {
+		
 		ObjectMapper objectMapper = new ObjectMapper();
 		NewRequestListDTO newRequestListDTO = objectMapper.readValue(newRequestListJson, NewRequestListDTO.class);
 		
 		String fileName = approvalmail.getOriginalFilename();
+		
 		if (fileName != null && !(fileName.endsWith(".pdf"))) {
+			
 			BaseResponse<RequestResponseDTO> response = new BaseResponse<RequestResponseDTO>();
 			response.setMessage("Invalid file format! Please upload a PDF file (.pdf).");
-			response.setData(null);
+			response.setData(null); 
 			return ResponseEntity.badRequest().body(response);
+			
 		}
 
 		UploadedFile approvalMail = new UploadedFile();

@@ -2,12 +2,19 @@ package com.htc.licenseapproval.dto;
 
 import java.util.Set;
 
+import com.htc.licenseapproval.enums.RequestType;
 import com.htc.licenseapproval.enums.Status;
 
 import lombok.Data;
 
 @Data
 public class RequestDetailsDTO {
+	
+	private String requestHeaderId;
+	private String requestorName;
+	private RequestType requestType;
+	private BUdetailsDTO buDetails;
+	private String approvedBy;
 	
 	private String requestId;
 	private Long empid;
