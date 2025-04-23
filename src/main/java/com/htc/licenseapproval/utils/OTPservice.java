@@ -29,6 +29,7 @@ public class OTPservice {
     private int otpExpiryMinutes = 2;
 
     public OTP generateOTP(UserCredentials user) {
+    	System.out.println(user.isOTPenabled());
     	if(!user.isOTPenabled()) {
     	OTP otp = new OTP(); 
         otp.setOtp(OtpGenerator.generateOTP());
@@ -63,20 +64,30 @@ public class OTPservice {
     	otpRepository.deleteById(id);
     }
     
-    @Scheduled(fixedDelay = 10000)
-    private void updateOTP() {
-    	List<OTP> otps  =otpRepository.findAll();
-    	if(otps!= null) {
-    	for(OTP otp : otps) {
-    		if(otp.getExpiryAt().isBefore(LocalDateTime.now())) {
-    			UserCredentials user =otp.getUser();
-        		user.setOTPenabled(false);
-        		userCredentialsRepository.save(user);
-        		removeOtp(otp.getId());
-    		}
-    	}
-    	}
+    public void removeOtp(String username) {
+    	OTP otp =otpRepository.findOtpByUserUsername(username);
+    	UserCredentials user =otp.getUser();
+		user.setOTPenabled(false);   	
+		userCredentialsRepository.save(user);
+    	otpRepository.delete(otp);
     }
+    
+//    @Scheduled(fixedDelay = 1000)
+//    private void updateOTP() {
+//    	List<OTP> otps  =otpRepository.findAll();
+//    	
+//    	if(otps!= null) {
+//    	for(OTP otp : otps) {
+//    		if(otp.getExpiryAt().isBefore(LocalDateTime.now())) {
+//    			UserCredentials user =otp.getUser();
+//        		user.setOTPenabled(false);   	
+//        		userCredentialsRepository.save(user);
+//        		removeOtp(otp.getId());
+//        		
+//    		}
+//    	}
+//    	}}
+    
     
     
     

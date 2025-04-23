@@ -60,6 +60,7 @@ public class UserServiceImpl implements UserService{
 	@Override
 	public UserCredentials updatePassword(String username, String password) {
 		UserCredentials cred = credentialsRepository.findById(username).orElseThrow(()->new RuntimeException("user not found with username : "+username));
+		System.out.println(password);
 		cred.setPassword(passwordEncoder.encode(password));
 		return credentialsRepository.save(cred);
 	}
