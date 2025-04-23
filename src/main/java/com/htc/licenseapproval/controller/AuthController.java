@@ -163,7 +163,6 @@ public class AuthController {
 					userDetails, null, userDetails.getAuthorities());
 			authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 			SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-<<<<<<< HEAD
 			request.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 			request.getSession(true).setMaxInactiveInterval(30*60);
 			UserLog userLog = UserLog.builder ()
@@ -174,12 +173,10 @@ public class AuthController {
 			logRepository.save(userLog);
 			
 			return ResponseEntity.status(HttpStatus.ACCEPTED)
-					.body("OTP verified successfully \nlogged in successfully");
-=======
-			 request.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+					.body("OTP verified successfully \nlogged in successfully");	
 
 			return ResponseEntity.status(HttpStatus.ACCEPTED).body("OTP verified successfully \nlogged in successfully");
->>>>>>> origin/main
+
 		}
 
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
