@@ -30,12 +30,14 @@ import com.htc.licenseapproval.entity.UserLog;
 import com.htc.licenseapproval.enums.OTPtype;
 import com.htc.licenseapproval.repository.LogRepository;
 import com.htc.licenseapproval.repository.UserCredentialsRepository;
+import com.htc.licenseapproval.response.BaseResponse;
 import com.htc.licenseapproval.service.UserService;
 import com.htc.licenseapproval.utils.EmailService;
 import com.htc.licenseapproval.utils.OTPservice;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.models.OpenAPI;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -47,6 +49,8 @@ import lombok.extern.slf4j.Slf4j;
 @CrossOrigin(origins = "http://localhost:5173")
 @Tag(name = "Authentication Controller", description = "APIs for handling users login and singup")
 public class AuthController {
+
+    private final OpenAPI customOpenAPI;
 
 	@Autowired
 	private UserService userService;
@@ -66,9 +70,14 @@ public class AuthController {
 	@Autowired
 	private UserCredentialsRepository userCredentialsRepository;
 
+    AuthController(OpenAPI customOpenAPI) {
+        this.customOpenAPI = customOpenAPI;
+    }
+
 	@PostMapping("/registerUser")
 	@Operation(summary = "Register user", description = "To register new user")
-	public ResponseEntity<String> registerUser(@RequestBody RegisterUser registerUser) {
+	public ResponseEntity<BaseResponse<String>> registerUser(@RequestBody RegisterUser registerUser) {
+		
 
 		UserCredentials userCredentials = new UserCredentials();
 		userCredentials.setUsername(registerUser.getUsername());
@@ -84,16 +93,30 @@ public class AuthController {
 
 			logRepository.save(userLog);
 			
-			return ResponseEntity.ok("Registered Successfully with username " + user.getUsername());
+			BaseResponse<String> response = new BaseResponse<>();
+			response.setCode(HttpStatus.OK.value());
+			response.setData("Registered Successfully with username " + user.getUsername());
+			response.setMessage("Registration");
+			
+			
+			return ResponseEntity.ok(response);
 
 		}
-		return new ResponseEntity<String>("Not found", HttpStatus.NOT_FOUND);
+		
+		BaseResponse<String> response = new BaseResponse<>();
+		response.setCode(HttpStatus.NO_CONTENT.value());
+		response.setData("No content");
+		response.setMessage("Registration");
+		
+		
+		return new ResponseEntity<BaseResponse<String>>(response,HttpStatus.NO_CONTENT);
+		
 	}
 
 	
 	@DeleteMapping("/deleteUser")
 	@Operation(summary = "Delete user", description = "To register user by username")
-	public ResponseEntity<String> deleteUser(@RequestParam String userName) {
+	public  ResponseEntity<BaseResponse<String>>  deleteUser(@RequestParam String userName) {
 		if (userService.deleteUser(userName) != null) {
 			
 			UserLog userLog = UserLog.builder()
@@ -103,15 +126,28 @@ public class AuthController {
 
 			logRepository.save(userLog);
 			
-			return ResponseEntity.ok("Deleted successfully " + userName);
+
+			BaseResponse<String> response = new BaseResponse<>();
+			response.setCode(HttpStatus.OK.value());
+			response.setData("User Deleted Successfully with username " + userName);
+			response.setMessage("Delete User");
+			
+			
+			return ResponseEntity.ok(response);
 			
 		}
-		return new ResponseEntity<String>("Not found", HttpStatus.NOT_FOUND);
+		BaseResponse<String> response = new BaseResponse<>();
+		response.setCode(HttpStatus.NO_CONTENT.value());
+		response.setData("User Deleted failed with username " + userName);
+		response.setMessage("Delete User");
+		
+		
+		return new ResponseEntity<BaseResponse<String>>(response,HttpStatus.NO_CONTENT);
 	}
 
 	@PostMapping("/login")
 	@Operation(summary = "Login user", description = "To login user by username")
-	public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
+	public ResponseEntity<BaseResponse<String>> login(@RequestBody LoginRequest loginRequest) {
 		try {
 			
 			String username = loginRequest.getUsername();
@@ -137,23 +173,48 @@ public class AuthController {
 				logRepository.save(userLog);
 				
 				log.info("Logged successfully as username : " + username);
+				
+				BaseResponse<String> response = new BaseResponse<>();
+				response.setCode(HttpStatus.OK.value());
+				response.setData("OTP send to your registered mail : " +user.getEmail());
+				response.setMessage("Login");
+				
+				
+				return ResponseEntity.ok(response);
 			    
-			    return ResponseEntity.ok("OTP send to your registered mail : " +user.getEmail());
 			}
+			
+			BaseResponse<String> response = new BaseResponse<>();
+			response.setCode(HttpStatus.ALREADY_REPORTED.value());
+			response.setData("Use the previous OTP sent through the email within 2 mins");
+			response.setMessage("Login");
+			
+			
+			return ResponseEntity.status(HttpStatus.ALREADY_REPORTED).body(response);
 
-			return ResponseEntity.ok("Use the previous OTP sent through the email within 2 mins");
 
 		} catch( MessagingException e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+			
+			BaseResponse<String> response = new BaseResponse<>();
+			response.setCode(HttpStatus.BAD_REQUEST.value());
+			response.setData(e.getMessage());
+			response.setMessage("Login");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 		}
 				
 		catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+			
+			BaseResponse<String> response = new BaseResponse<>();
+			response.setCode(HttpStatus.BAD_REQUEST.value());
+			response.setData("Invalid credentials");
+			response.setMessage("Login");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+			
 		}
 	}
 
 	@PostMapping("/login/otpVerification")
-	public ResponseEntity<String> otpVerification(@RequestParam String OTP, @RequestParam String username,
+	public ResponseEntity<BaseResponse<String>> otpVerification(@RequestParam String OTP, @RequestParam String username,
 			HttpServletRequest request) {
 		UserCredentials userCredentials = userService.findByUsername(username);
 		if (otpService.validateOTP(OTP, username) && userCredentials.isOTPenabled()) {
@@ -172,23 +233,28 @@ public class AuthController {
 
 			logRepository.save(userLog);
 			otpService.removeOtp(username);
-			return ResponseEntity.status(HttpStatus.ACCEPTED)
-<<<<<<< HEAD
-					.body("OTP verified successfully \nlogged in successfully");
-=======
-					.body("OTP verified successfully \nlogged in successfully");	
+			
+			BaseResponse<String> response = new BaseResponse<>();
+			response.setCode(HttpStatus.ACCEPTED.value());
+			response.setData("OTP verified successfully ");
+			response.setMessage("Login - otp verification");
+			
+			return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
 
-			return ResponseEntity.status(HttpStatus.ACCEPTED).body("OTP verified successfully \nlogged in successfully");
-
->>>>>>> 03b42d0346e5af0bdf2f95bb57c312a34f1058c4
 		}
+		
+		BaseResponse<String> response = new BaseResponse<>();
+		response.setCode(HttpStatus.UNAUTHORIZED.value());
+		response.setData("Invalid OTP");
+		response.setMessage("Login - otp verification");
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
 
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
+	
 
 	}
 
 	@PostMapping("/forgotpassword")
-	public ResponseEntity<String> forgotPasssword(@RequestParam String username) throws MessagingException {
+	public ResponseEntity<BaseResponse<String>> forgotPasssword(@RequestParam String username) throws MessagingException {
 		OTP otp = null;
 		UserCredentials user = userService.findByUsername(username);
 		if (!user.isOTPenabled()) {
@@ -201,15 +267,26 @@ public class AuthController {
 
 			logRepository.save(userLog2);
 			emailService.sendVerficationOtpEmail(user.getEmail(), otp.getOtp(),user.getUsername(),OTPtype.FORGOT_PASSWORD);
+			
+			BaseResponse<String> response = new BaseResponse<>();
+			response.setCode(HttpStatus.ACCEPTED.value());
+			response.setData("OTP successfully sent to your registered e-mail id : "+user.getEmail());
+			response.setMessage("Forgot password");
 						
-			return ResponseEntity.ok("OTP successfully sent to your registered e-mail id : "+user.getEmail());
+			return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
 		}
-		return ResponseEntity.ok("Use the previous OTP sent through the email within 2 mins");
+		BaseResponse<String> response = new BaseResponse<>();
+		response.setCode(HttpStatus.ALREADY_REPORTED.value());
+		response.setData("Use the previous OTP sent through the email within 2 mins");
+		response.setMessage("Forgot password");
+		
+		
+		return ResponseEntity.status(HttpStatus.ALREADY_REPORTED).body(response);
 
 	}
 
 	@PostMapping("/changePassword/{OTP}")
-	public ResponseEntity<String> changePassword(@RequestBody UpdatePasswordDTO loginRequest,
+	public ResponseEntity<BaseResponse<String>> changePassword(@RequestBody UpdatePasswordDTO loginRequest,
 			@PathVariable String OTP) {
 		if (otpService.validateOTP(OTP, loginRequest.getUsername())) {
 
@@ -224,16 +301,33 @@ public class AuthController {
 
 				logRepository.save(userLog);
 				otpService.removeOtp(loginRequest.getUsername());
-				return ResponseEntity.status(HttpStatus.ACCEPTED).body("Password changed successfully for username : "+loginRequest.getUsername());
+				
+				BaseResponse<String> response = new BaseResponse<>();
+				response.setCode(HttpStatus.ACCEPTED.value());
+				response.setData("Password changed successfully for username : "+loginRequest.getUsername());
+				response.setMessage("Forgot password - otp verification");
+							
+				return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+				
 			}
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Error");
+			BaseResponse<String> response = new BaseResponse<>();
+			response.setCode(HttpStatus.UNAUTHORIZED.value());
+			response.setData("Credentials is null");
+			response.setMessage("Forgot password - otp verification");
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 		}
+		
+		BaseResponse<String> response = new BaseResponse<>();
+		response.setCode(HttpStatus.UNAUTHORIZED.value());
+		response.setData("Invalid OTP");
+		response.setMessage("Forgot password - otp verification");
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
 
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
 	}
 
 	@PostMapping("/logout")
-	public ResponseEntity<String> logout(HttpServletRequest request) {
+	public ResponseEntity<BaseResponse<String>> logout(HttpServletRequest request) {
 		
 		String username = SecurityContextHolder.getContext().getAuthentication().getName();
 		
@@ -251,7 +345,14 @@ public class AuthController {
 
 		logRepository.save(userLog);
 		
-		return ResponseEntity.ok("Logged out successfully");
+		BaseResponse<String> response = new BaseResponse<>();
+		response.setCode(HttpStatus.ACCEPTED.value());
+		response.setData("Logged out successfully for username : "+username);
+		response.setMessage("Logged out");
+					
+		return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+		
+	
 	}
 
 	private Authentication authenticate(String userName, String password) {

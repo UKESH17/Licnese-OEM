@@ -10,26 +10,42 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.htc.licenseapproval.response.BaseResponse;
+
 @RestControllerAdvice
 public class GlobalException {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<List<String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+	public ResponseEntity<BaseResponse<List<String>>> handleValidationExceptions(MethodArgumentNotValidException ex) {
 
 		List<String> errors = ex.getBindingResult().getFieldErrors().stream()
 				.map(error -> error.getField() + ": " + error.getDefaultMessage()).collect(Collectors.toList());
-
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+		
+		BaseResponse<List<String>> response = new BaseResponse<>();
+		response.setCode(HttpStatus.BAD_REQUEST.value());
+		response.setData(errors);
+		response.setMessage("Login");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+		
 	}
 
 	@ExceptionHandler(IOException.class)
-	public ResponseEntity<String> handleException(IOException exc) {
-		return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(exc.getMessage());
+	public ResponseEntity<BaseResponse<String>> handleException(IOException exc) {
+		BaseResponse<String> response = new BaseResponse<>();
+		response.setCode(HttpStatus.BAD_REQUEST.value());
+		response.setData(exc.getMessage());
+		response.setMessage("Login");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+		
 	}
 
 	@ExceptionHandler(RuntimeException.class)
-	public ResponseEntity<String> handleException(RuntimeException exc) {
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exc.getMessage());
+	public ResponseEntity<BaseResponse<String>> handleException(RuntimeException exc) {
+		BaseResponse<String> response = new BaseResponse<>();
+		response.setCode(HttpStatus.BAD_REQUEST.value());
+		response.setData(exc.getMessage());
+		response.setMessage("Login");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
 }

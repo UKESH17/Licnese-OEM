@@ -83,7 +83,8 @@ public class RequestListController {
 			
 			BaseResponse<RequestResponseDTO> response = new BaseResponse<RequestResponseDTO>();
 			response.setMessage("Invalid file format! Please upload a PDF file (.pdf).");
-			response.setData(null); 
+			response.setData(null);
+			response.setCode(HttpStatus.BAD_REQUEST.value());
 			return ResponseEntity.badRequest().body(response);
 			
 		}
@@ -108,28 +109,41 @@ public class RequestListController {
 		response.setMessage("Request successfully received and file uploaded successfully with name "
 				+ approvalmail.getOriginalFilename());
 		response.setData(requestListService.newRequestHeader(newRequestListDTO, approvalMail));
+		response.setCode(HttpStatus.CREATED.value());
+		
 		return new ResponseEntity<>(response, HttpStatus.CREATED);
 	}
 
 	@Operation(summary = "Approve or reject a request", description = "Change the status of a license request (approve or reject)")
 	@PutMapping(value = "/approval/{requestHeaderId}")
-	public ResponseEntity<LicenseApprovalDTO> approveRequest(@RequestParam Status status, @PathVariable String requestHeaderId)
+	public ResponseEntity<BaseResponse<LicenseApprovalDTO>> approveRequest(@RequestParam Status status, @PathVariable String requestHeaderId)
 			throws IOException {
-		return new ResponseEntity<>(requestListService.requestApproval(requestHeaderId, status), HttpStatus.ACCEPTED);
+		
+		BaseResponse<LicenseApprovalDTO> response = new BaseResponse<>();
+		response.setMessage("License status updated");
+		response.setData(requestListService.requestApproval(requestHeaderId, status));
+		response.setCode(HttpStatus.CREATED.value());
+		
+		return new ResponseEntity<>(response, HttpStatus.CREATED);
 	}
 	
 	@Operation(summary = "For updating end date", description = "Change the end date of the license request ")
 	@PutMapping(value = "/endDate/{requestID}")
-	public ResponseEntity<RequestResponseDTO> changeExpiryDate(@RequestParam String expiredDate,@RequestParam String reason,@PathVariable String requestID)
+	public ResponseEntity<BaseResponse<RequestResponseDTO>> changeExpiryDate(@RequestParam String expiredDate,@RequestParam String reason,@PathVariable String requestID)
 	{
 		ChangeExpireData changeExpiredDateDTO = new ChangeExpireData(reason, expiredDate);
+			
+		BaseResponse<RequestResponseDTO> response = new BaseResponse<>();
+		response.setMessage("Updated end date ");
+		response.setData(requestDetailsService.changeExpireDate(requestID, changeExpiredDateDTO));
+		response.setCode(HttpStatus.CREATED.value());
 		
-		return new ResponseEntity<>(requestDetailsService.changeExpireDate(requestID, changeExpiredDateDTO), HttpStatus.ACCEPTED);
+		return new ResponseEntity<>(response, HttpStatus.CREATED);
 	}
 
 	@Operation(summary = "Add courses to a request", description = "Attach course details and certificate files to a request")
 	@PostMapping(value = "/add/Courses/{requestDetailsId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<RequestDetailsDTO> addCourses(
+	public ResponseEntity<BaseResponse<RequestDetailsDTO>> addCourses(
 		    @PathVariable String requestDetailsId,
 		    @RequestPart(value="course-JSON") String coursesDTOjson,
 		    @RequestPart(value="certificates",required = false) MultipartFile[] files
@@ -156,20 +170,37 @@ public class RequestListController {
 		}
 		courses.setCertificates(uploadedFiles);
 		}
-		return ResponseEntity.ok(requestDetailsService.addCourses(requestDetailsId, courses));
+
+		BaseResponse<RequestDetailsDTO> response = new BaseResponse<>();
+		response.setMessage("Added courses to a request ");
+		response.setData(requestDetailsService.addCourses(requestDetailsId, courses));
+		response.setCode(HttpStatus.CREATED.value());
+		
+		return new ResponseEntity<>(response, HttpStatus.CREATED);
 	}
 	
 	@PostMapping("/addBU")
-	public ResponseEntity<BUdetails> addBU(@RequestBody BUdetailsDTO bu){
+	public ResponseEntity<BaseResponse<BUdetails>> addBU(@RequestBody BUdetailsDTO bu){
 		BUdetails bUdetails = new BUdetails();
 		bUdetails.setBu(bu.getBu());
 		bUdetails.setBuHead(bu.getBuHead());
 		bUdetails.setBuDeliveryHead(bu.getBuDeliveryHead());
-		return ResponseEntity.ok(buRepository.save(bUdetails));
+		BaseResponse<BUdetails> response = new BaseResponse<>();
+		response.setMessage("BU successfully added");
+		response.setData(buRepository.save(bUdetails));
+		response.setCode(HttpStatus.CREATED.value());
+		
+		return new ResponseEntity<>(response, HttpStatus.CREATED);
 	} 
 	
 	@PostMapping(value="/excel/addAllBU", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<Set<BUdetailsDTO>> addBUbyExcel(@RequestPart("bu-excel") MultipartFile file){ 
-		return ResponseEntity.ok(excelService.readExcelAndProcessforBudetails(file));
+	public ResponseEntity<BaseResponse<Set<BUdetailsDTO>>> addBUbyExcel(@RequestPart("bu-excel") MultipartFile file){ 
+
+		BaseResponse<Set<BUdetailsDTO>> response = new BaseResponse<>();
+		response.setMessage("Added all BUS");
+		response.setData(excelService.readExcelAndProcessforBudetails(file));
+		response.setCode(HttpStatus.CREATED.value());
+		
+		return new ResponseEntity<>(response, HttpStatus.CREATED);
 	} 
 }

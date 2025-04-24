@@ -473,7 +473,6 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 
 		Map<Month, List<RequestDetailsDTO>> quarterlyReport = new HashMap<>();
 
-		System.out.println(allActiveLicense);
 		for (int i = 0; i < 3; i++) {
 			quarterlyReport.put(present.minus(i), new ArrayList<>());
 		}

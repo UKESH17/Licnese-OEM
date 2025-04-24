@@ -3,7 +3,6 @@ package com.htc.licenseapproval.controller;
 import java.io.IOException;
 import java.time.Month;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +23,6 @@ import com.htc.licenseapproval.dto.RequestDetailsDTO;
 import com.htc.licenseapproval.dto.RequestResponseDTO;
 import com.htc.licenseapproval.dto.ResponseDTO;
 import com.htc.licenseapproval.entity.LicenseLogMessages;
-import com.htc.licenseapproval.entity.RequestDetails;
 import com.htc.licenseapproval.response.BaseResponse;
 import com.htc.licenseapproval.service.RequestDetailsService;
 import com.htc.licenseapproval.service.RequestHeaderService;
@@ -59,6 +57,7 @@ public class RequestDataController {
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
 		response.setMessage("All Requests fetched successfully ");
 		response.setData(requestListService.totalRequest());
+		response.setCode( HttpStatus.ACCEPTED.value());
 		long end = System.currentTimeMillis();
 		log.info("Upload took: " + (end - start) + " ms");
 		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
@@ -66,17 +65,23 @@ public class RequestDataController {
 
 	@Operation(summary = "Get course and certificates", description = "Returns course and certificate details by request ID")
 	@GetMapping(value = "/getall/certificates/{requestDetailsId}")
-	public ResponseEntity<Set<CoursesDTO>> getCourseDetails(
+	public ResponseEntity<BaseResponse<Set<CoursesDTO>>> getCourseDetails(
 			@Parameter(description = "ID of request details") @PathVariable String requestDetailsId)
 			throws IOException {
-		return ResponseEntity.ok(requestDetailsService.getCourseandCertificates(requestDetailsId));
+		
+		BaseResponse<Set<CoursesDTO>> response = new BaseResponse<>();
+		response.setMessage("All course and certificates fetched successfully for request");
+		response.setData(requestDetailsService.getCourseandCertificates(requestDetailsId));
+		response.setCode( HttpStatus.OK.value());
+		
+		return ResponseEntity.ok(response);
 	}
 
 	// REPORTS CONTAINS ONLY CONSUMED LICENSE (Except PENDING)
 
 	@Operation(summary = "Get quarterly report", description = "Returns license request count per quarter")
 	@GetMapping("/report/quarterlyReport")
-	public ResponseEntity<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>> quarterlyReport() {
+	public ResponseEntity<BaseResponse<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>>> quarterlyReport() {
 		Map<Month, ResponseDTO<List<RequestDetailsDTO>>> map = new EnumMap<>(Month.class);
 
 		Map<Month, List<RequestDetailsDTO>> report = requestListService.quarterlyReport();
@@ -88,14 +93,20 @@ public class RequestDataController {
 			map.put(key, responseDTO);
 
 		}
-		return new ResponseEntity<>(map, HttpStatus.ACCEPTED);
+		
+		BaseResponse<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>> response = new BaseResponse<>();
+		response.setMessage(" Quarterly report fetched successfully ");
+		response.setData(map);
+		response.setCode( HttpStatus.OK.value());
+		
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	// REPORTS CONTAINS ONLY CONSUMED LICENSE (Except PENDING)
 
-	@Operation(summary = "Get quarterly report", description = "Returns license request count per quarter")
+	@Operation(summary = "Get quarterly report by BU", description = "Returns license request count per quarter")
 	@GetMapping("/report/quarterlyReport/byBU")
-	public ResponseEntity<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>> quarterlyReportByBU(
+	public ResponseEntity<BaseResponse<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>>> quarterlyReportByBU(
 			@RequestParam String Bu) {
 
 		Map<Month, ResponseDTO<List<RequestDetailsDTO>>> map1 = new EnumMap<>(Month.class);
@@ -110,15 +121,18 @@ public class RequestDataController {
 			
 
 		}
+		BaseResponse<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>> response = new BaseResponse<>();
+		response.setMessage("Quarterly report by BU fetched successfully ");
+		response.setData(map1);
+		response.setCode( HttpStatus.OK.value());
 		
-		return new ResponseEntity<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>>(map1, HttpStatus.ACCEPTED);
-
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	// REPORTS CONTAINS ONLY CONSUMED LICENSE (Except PENDING)
 	@Operation(summary = "Get annual report", description = "Returns license request count per month for a year")
 	@GetMapping("/report/annualReport")
-	public ResponseEntity<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>> annualReport() {
+	public ResponseEntity<BaseResponse<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>> > annualReport() {
 		
 		Map<Month, ResponseDTO<List<RequestDetailsDTO>>> map = new EnumMap<>(Month.class);
 
@@ -131,7 +145,11 @@ public class RequestDataController {
 			map.put(key, responseDTO);
 
 		}
-		return new ResponseEntity<>(map, HttpStatus.ACCEPTED);
+		BaseResponse<Map<Month, ResponseDTO<List<RequestDetailsDTO>>>> response = new BaseResponse<>();
+		response.setMessage("Annual report fetched successfully ");
+		response.setData(map);
+		response.setCode( HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 		
 	}
 
@@ -142,7 +160,8 @@ public class RequestDataController {
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
 		response.setMessage("All Requests fetched successfully with employee id : " + empID);
 		response.setData(requestListService.totalRequestsByEmp(empID));
-		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+		response.setCode( HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@Operation(summary = "Get pending licenses", description = "Fetches all pending license requests")
@@ -150,9 +169,10 @@ public class RequestDataController {
 	public ResponseEntity<BaseResponse<ResponseDTO<List<RequestResponseDTO>>>> getAllPendingLicenses()
 			throws IOException {
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
-		response.setMessage("All Requests fetched successfully ");
+		response.setMessage("All pending licenses fetched successfully ");
 		response.setData(requestListService.allPendingLicense());
-		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+		response.setCode( HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@Operation(summary = "Get active licenses", description = "Fetches all currently active license requests")
@@ -160,9 +180,10 @@ public class RequestDataController {
 	public ResponseEntity<BaseResponse<ResponseDTO<List<RequestResponseDTO>>>> getAllActiveLicenses()
 			throws IOException {
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
-		response.setMessage("All Requests fetched successfully ");
+		response.setMessage("All active licenses fetched successfully ");
 		response.setData(requestListService.allActiveLicense());
-		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+		response.setCode( HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@Operation(summary = "Get expiring soon licenses", description = "Fetches all licenses that are expiring soon")
@@ -170,9 +191,10 @@ public class RequestDataController {
 	public ResponseEntity<BaseResponse<ResponseDTO<List<RequestResponseDTO>>>> getAllExpiringSoonLicense()
 			throws IOException {
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
-		response.setMessage("All Requests fetched successfully ");
+		response.setMessage("All Expiring soon licenses fetched successfully ");
 		response.setData(requestListService.allExpireSoonLicense());
-		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+		response.setCode( HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@Operation(summary = "Get expired licenses", description = "Fetches all expired licenses")
@@ -180,9 +202,10 @@ public class RequestDataController {
 	public ResponseEntity<BaseResponse<ResponseDTO<List<RequestResponseDTO>>>> getAllExpiredLicense()
 			throws IOException {
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
-		response.setMessage("All Requests fetched successfully ");
+		response.setMessage("Expired licenses fetched successfully ");
 		response.setData(requestListService.allExpiredLicense());
-		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+		response.setCode( HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@Operation(summary = "Get pending requests", description = "Fetches all license requests with status pending")
@@ -192,7 +215,8 @@ public class RequestDataController {
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
 		response.setMessage("All Pending Requests fetched successfully ");
 		response.setData(requestListService.pendingRequest());
-		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+		response.setCode( HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@Operation(summary = "Get rejected requests", description = "Fetches all license requests that were rejected")
@@ -202,7 +226,8 @@ public class RequestDataController {
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
 		response.setMessage("All Rejected Requests fetched successfully ");
 		response.setData(requestListService.rejectedRequest());
-		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+		response.setCode( HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@Operation(summary = "Get approved requests", description = "Fetches all license requests that are approved")
@@ -212,23 +237,34 @@ public class RequestDataController {
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
 		response.setMessage("All Approved Requests fetched successfully ");
 		response.setData(requestListService.approvedRequest());
-		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+		response.setCode( HttpStatus.OK.value());
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@Operation(summary = "Get requests by Business Unit", description = "Fetches all license requests with the business unit")
 	@GetMapping("/getall/byBU/{BUname}")
 	public ResponseEntity<BaseResponse<ResponseDTO<List<RequestResponseDTO>>>> getAllRequestByBU(
 			@PathVariable String BUname) throws IOException {
+		
 		BaseResponse<ResponseDTO<List<RequestResponseDTO>>> response = new BaseResponse<>();
 		response.setMessage("All Requets per Business unit " + BUname);
 		response.setData(requestListService.totalRequestPerBU(BUname));
-		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+		response.setCode( HttpStatus.OK.value());
+		
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@Operation(summary = "Get Log Messages", description = "License Log messages per request id ")
 	@GetMapping("/LicenseLogs/{requestId}")
-	public ResponseEntity<Set<LicenseLogMessages>> licenseLogMessages(@PathVariable String requestId) {
-		return new ResponseEntity<>(requestDetailsService.licenseLogPerRequestId(requestId), HttpStatus.ACCEPTED);
+	public ResponseEntity<BaseResponse<Set<LicenseLogMessages>>> licenseLogMessages(@PathVariable String requestId) {
+		
+		BaseResponse<Set<LicenseLogMessages>> response = new BaseResponse<>();
+		response.setMessage("Quarterly report by BU fetched successfully ");
+		response.setData(requestDetailsService.licenseLogPerRequestId(requestId));
+		response.setCode( HttpStatus.OK.value());
+		
+		return new ResponseEntity<>(response, HttpStatus.OK);
+		
 	}
 
 	// not used
