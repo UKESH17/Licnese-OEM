@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.htc.licenseapproval.dto.LicenseApprovalDTO;
@@ -133,6 +134,7 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 
 		LicenseApprovalDTO approvalDTO = new LicenseApprovalDTO();
 		Set<LicenseDetails> licenseDetailSet = new HashSet<>();
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
 		RequestHeader request = this.findById(id);
 		if (request != null) {
@@ -154,13 +156,13 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 					licenseDetails.setLicenseExpireDate(end);
 					licenseDetailSet.add(licenseDetails);
 
-					requestDetails.setApprovalGivenBy("Ukesh");
+					requestDetails.setApprovalGivenBy(username);
 					requestDetails.setLicenseDetails(licenseDetails);
 
 					LicenseLogMessages logMessages = new LicenseLogMessages();
 					logMessages.setLoggedDate(DateFormatter.normaliseDate(LocalDateTime.now()));
 					logMessages.setLogMessages(
-							"Request Approval Status -> " + status + " for request details id " + id + " by Ukesh");
+							"Request Approval Status -> " + status + " for request details id " + id +" by "+ username);
 					logMessages.setRequestDetails(requestDetails);
 					licenseLogMessagesRepository.save(logMessages);
 
@@ -170,7 +172,7 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 				approvalDTO.setLicenseDetailsDTOs(
 						licenseDetailSet.stream().map(mapperService::toLicenseDTO).collect(Collectors.toSet()));
 				approvalDTO.setMessage("License request approved");
-				approvalDTO.setApprovalGivenBy("Ukesh");
+				approvalDTO.setApprovalGivenBy(username);
 
 				request.setRequestDetails(requestDetailSet);
 
@@ -183,6 +185,7 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 				for (RequestDetails requestDetails : requestDetailSet) {
 
 					requestDetails.setStatus(status);
+					requestDetails.setApprovalGivenBy("Rejected by - "+username);
 					LicenseDetails licenseDetails = requestDetails.getLicenseDetails();
 					licenseDetails.setLicenceStatus(LicenceStatus.PENDING);
 					licenseDetails.setLicenseStartedDate(null);
@@ -192,7 +195,7 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 					LicenseLogMessages logMessages = new LicenseLogMessages();
 					logMessages.setLoggedDate(DateFormatter.normaliseDate(LocalDateTime.now()));
 					logMessages.setLogMessages(
-							"Request Approval Status -> " + status + " for request details id " + id + " by Ukesh");
+							"Request Approval Status -> " + status + " for request details id " + id +" by "+ username);
 					logMessages.setRequestDetails(requestDetails);
 					licenseLogMessagesRepository.save(logMessages);
 
@@ -202,7 +205,7 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 				approvalDTO.setLicenseDetailsDTOs(
 						licenseDetailSet.stream().map(mapperService::toLicenseDTO).collect(Collectors.toSet()));
 				approvalDTO.setMessage("License request rejected");
-				approvalDTO.setApprovalGivenBy("Not yet Approved");
+				approvalDTO.setApprovalGivenBy("Rejected by - "+username);
 
 				request.setRequestDetails(requestDetailSet);
 
@@ -224,7 +227,7 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 					LicenseLogMessages logMessages = new LicenseLogMessages();
 					logMessages.setLoggedDate(DateFormatter.normaliseDate(LocalDateTime.now()));
 					logMessages.setLogMessages(
-							"Request Approval Status -> " + status + " for request details id " + id + " by Ukesh");
+							"Request Approval Status -> " + status + " for request details id " + id +" by "+ username);
 					logMessages.setRequestDetails(requestDetails);
 					licenseLogMessagesRepository.save(logMessages);
 
@@ -235,7 +238,6 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 						licenseDetailSet.stream().map(mapperService::toLicenseDTO).collect(Collectors.toSet()));
 				approvalDTO.setMessage("License request Pending");
 				approvalDTO.setApprovalGivenBy("Not yet Approved");
-
 				request.setRequestDetails(requestDetailSet);
 
 				break;
@@ -246,6 +248,7 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 			}
 
 			requestHeaderRepository.save(request);
+			
 			return approvalDTO;
 		}
 

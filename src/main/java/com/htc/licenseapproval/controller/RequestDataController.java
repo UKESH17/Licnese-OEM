@@ -22,7 +22,9 @@ import com.htc.licenseapproval.dto.NewRequestListDTO;
 import com.htc.licenseapproval.dto.RequestDetailsDTO;
 import com.htc.licenseapproval.dto.RequestResponseDTO;
 import com.htc.licenseapproval.dto.ResponseDTO;
+import com.htc.licenseapproval.entity.BUdetails;
 import com.htc.licenseapproval.entity.LicenseLogMessages;
+import com.htc.licenseapproval.repository.BUdetailsRepository;
 import com.htc.licenseapproval.response.BaseResponse;
 import com.htc.licenseapproval.service.RequestDetailsService;
 import com.htc.licenseapproval.service.RequestHeaderService;
@@ -44,6 +46,9 @@ public class RequestDataController {
 
 	@Autowired
 	private RequestDetailsService requestDetailsService;
+	
+	@Autowired
+	private BUdetailsRepository bUdetailsRepository;
 
 	@GetMapping("/path")
 	public String getMethodName(@RequestParam NewRequestListDTO param) {
@@ -62,6 +67,12 @@ public class RequestDataController {
 		log.info("Upload took: " + (end - start) + " ms");
 		return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
 	}
+	
+	@GetMapping("/getall/BUs")
+	public List<BUdetails> getAllBUs() {
+		return bUdetailsRepository.findAll();
+	}
+	
 
 	@Operation(summary = "Get course and certificates", description = "Returns course and certificate details by request ID")
 	@GetMapping(value = "/getall/certificates/{requestDetailsId}")
@@ -259,7 +270,7 @@ public class RequestDataController {
 	public ResponseEntity<BaseResponse<Set<LicenseLogMessages>>> licenseLogMessages(@PathVariable String requestId) {
 		
 		BaseResponse<Set<LicenseLogMessages>> response = new BaseResponse<>();
-		response.setMessage("Quarterly report by BU fetched successfully ");
+		response.setMessage("All log messages");
 		response.setData(requestDetailsService.licenseLogPerRequestId(requestId));
 		response.setCode( HttpStatus.OK.value());
 		
