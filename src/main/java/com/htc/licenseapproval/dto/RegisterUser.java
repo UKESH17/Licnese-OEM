@@ -8,9 +8,11 @@ import lombok.Data;
 public class RegisterUser {
 
 	@NotBlank(message = "Username cannot be blank")
+	@NotNull
 	private String username;
 
 	@NotNull(message = "Password cannot be null")
+	@NotBlank
 	@Size(min = 12, message = "Password must be at least 12 characters long.")
 	@Pattern(regexp = ".*[A-Z].*", message = "Password must contain at least one uppercase letter.")
 	@Pattern(regexp = ".*[a-z].*", message = "Password must contain at least one lowercase letter.")

@@ -34,7 +34,7 @@ public class OTPservice {
         otp.setOtp(OtpGenerator.generateOTP());
         otp.setExpiryAt(LocalDateTime.now().plusMinutes(otpExpiryMinutes));
         otp.setUser(user);
-		return otpRepository.save(otp);
+		return otp;
     	}
     	throw new RuntimeException("OTP already sent");
                 

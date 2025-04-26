@@ -17,23 +17,20 @@ public class GlobalException {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<BaseResponse<List<String>>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-
+		BaseResponse<List<String>> baseResponse = new BaseResponse<>();
+		baseResponse.setCode(HttpStatus.BAD_REQUEST.value());
+		
+		baseResponse.setMessage("Input Validation failed - Please read the norms to be followed for registration");
 		List<String> errors = ex.getBindingResult().getFieldErrors().stream()
 				.map(error -> error.getField() + ": " + error.getDefaultMessage()).collect(Collectors.toList());
-		
-		BaseResponse<List<String>> response = new BaseResponse<>();
-		response.setCode(HttpStatus.BAD_REQUEST.value());
-		response.setData(errors);
-		response.setMessage("Login");
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-		
+		baseResponse.setData(errors);
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(baseResponse);
 	}
-
 	@ExceptionHandler(IOException.class)
 	public ResponseEntity<BaseResponse<String>> handleException(IOException exc) {
 		BaseResponse<String> response = new BaseResponse<>();
 		response.setCode(HttpStatus.BAD_REQUEST.value());
-		response.setData(exc.getMessage());
+		response.setData("Request failed ->"+exc.getMessage());
 		response.setMessage("Login");
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 		
@@ -43,8 +40,8 @@ public class GlobalException {
 	public ResponseEntity<BaseResponse<String>> handleException(RuntimeException exc) {
 		BaseResponse<String> response = new BaseResponse<>();
 		response.setCode(HttpStatus.BAD_REQUEST.value());
-		response.setData(exc.getMessage());
-		response.setMessage("Login");
+		response.setData("Request failed ->"+exc.getMessage());
+		response.setMessage("failed");
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 

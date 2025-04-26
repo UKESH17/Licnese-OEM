@@ -1,4 +1,4 @@
-package com.htc.licenseapproval.entity;
+package com.htc.licenseapproval.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,8 +10,10 @@ import lombok.Data;
 public class UpdatePasswordDTO {
 
 	@NotBlank
+	@NotNull
 	private String username;
-	@NotNull(message = "Password cannot be null")
+	@NotBlank(message = "Password cannot be null")
+	@NotNull
 	@Size(min = 12, message = "Password must be at least 12 characters long.")
 	@Pattern(regexp = ".*[A-Z].*", message = "Password must contain at least one uppercase letter.")
 	@Pattern(regexp = ".*[a-z].*", message = "Password must contain at least one lowercase letter.")
