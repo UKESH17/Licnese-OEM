@@ -30,6 +30,7 @@ import com.htc.licenseapproval.entity.RequestDetails;
 import com.htc.licenseapproval.entity.RequestHeader;
 import com.htc.licenseapproval.entity.UploadedFile;
 import com.htc.licenseapproval.enums.LicenceStatus;
+import com.htc.licenseapproval.enums.LicenseType;
 import com.htc.licenseapproval.enums.Status;
 import com.htc.licenseapproval.file.compressor.Compressor;
 import com.htc.licenseapproval.mapper.MapperService;
@@ -269,15 +270,25 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 
 	/* ALL REQUEST DATA */
 
+	//unused
 	@Override
-	public ResponseDTO<List<RequestResponseDTO>> totalRequestPerBU(String name) {
-		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
-		List<RequestResponseDTO> list = bUdetailsRepository.findByBu(name).get().getRequests().stream()
-				.map(mapperService::toResponseDTO).collect(Collectors.toList());
-		response.setData(list);
-		response.setCount(list.size());
-		return response;
+	public ResponseDTO<List<RequestResponseDTO>> totalRequestPerBU(String name, LicenseType licenseType) {
+	    ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
+	    List<RequestResponseDTO> list = bUdetailsRepository.findByBu(name)
+	            .orElse(new BUdetails())
+	            .getRequests()
+	            .stream()
+	            .flatMap(req -> req.getRequestDetails().stream() 
+	                    .filter(detail -> detail.getLicenseDetails().equals(licenseType)) 
+	                    .map(mapperService::toResponseDTO))
+	            .collect(Collectors.toList());
+
+	    response.setData(list);
+	    response.setCount(list.size());
+	    return response;
 	}
+
+
 
 	@Override
 	public ResponseDTO<List<RequestResponseDTO>> totalRequest() {
@@ -291,11 +302,13 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 
 	}
 
+	//unused
 	@Override
 	public List<RequestDetails> getAllRequestLists() {
 		return this.requestDetailsRepository.findAll();
 	}
-
+	
+   //unused
 	@Override
 	public ResponseDTO<List<RequestResponseDTO>> totalRequestsByEmp(Long empid) {
 
@@ -311,10 +324,22 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 
 	/* LICENSE AND REQUEST STAUS METHOD */
 
-	private ResponseDTO<List<RequestDetails>> allConsumedLicense() {
+	private ResponseDTO<List<RequestDetails>> allConsumedLicense( LicenseType licenseType) {
 
 		List<RequestDetails> list = this.getAllRequestLists().stream()
-				.filter(t -> !t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.PENDING))
+				.filter(t -> !t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.PENDING) && t.getLicenseDetails().getLicenseType().equals(licenseType) )
+				.collect(Collectors.toList());
+		ResponseDTO<List<RequestDetails>> response = new ResponseDTO<>();
+		response.setData(list);
+		response.setCount(list.size());
+		return response;
+
+	}
+	
+	private ResponseDTO<List<RequestDetails>> allConsumed() {
+
+		List<RequestDetails> list = this.getAllRequestLists().stream()
+				.filter(t -> !t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.PENDING) )
 				.collect(Collectors.toList());
 		ResponseDTO<List<RequestDetails>> response = new ResponseDTO<>();
 		response.setData(list);
@@ -324,11 +349,11 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	}
 
 	@Override
-	public ResponseDTO<List<RequestResponseDTO>> allActiveLicense() {
+	public ResponseDTO<List<RequestResponseDTO>> allActiveLicense(LicenseType licenseType) {
 
 		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
 		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
-				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.ACTIVE))
+				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.ACTIVE)&& t.getLicenseDetails().getLicenseType().equals(licenseType))
 				.map(mapperService::toResponseDTO).collect(Collectors.toList());
 
 		response.setData(list);
@@ -337,10 +362,10 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	}
 
 	@Override
-	public ResponseDTO<List<RequestResponseDTO>> allPendingLicense() {
+	public ResponseDTO<List<RequestResponseDTO>> allPendingLicense(LicenseType licenseType) {
 		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
 		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
-				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.PENDING))
+				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.PENDING) && t.getLicenseDetails().getLicenseType().equals(licenseType))
 				.map(mapperService::toResponseDTO).collect(Collectors.toList());
 
 		response.setData(list);
@@ -349,10 +374,10 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	}
 
 	@Override
-	public ResponseDTO<List<RequestResponseDTO>> allExpireSoonLicense() {
+	public ResponseDTO<List<RequestResponseDTO>> allExpireSoonLicense(LicenseType licenseType ) {
 		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
 		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
-				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.EXPIRING_SOON))
+				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.EXPIRING_SOON)&& t.getLicenseDetails().getLicenseType().equals(licenseType) )
 				.map(mapperService::toResponseDTO).collect(Collectors.toList());
 
 		response.setData(list);
@@ -361,10 +386,10 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	}
 
 	@Override
-	public ResponseDTO<List<RequestResponseDTO>> allExpiredLicense() {
+	public ResponseDTO<List<RequestResponseDTO>> allExpiredLicense(LicenseType licenseType) {
 		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
 		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
-				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.EXPIRED))
+				.filter(t -> t.getLicenseDetails().getLicenceStatus().equals(LicenceStatus.EXPIRED) &&  t.getLicenseDetails().getLicenseType().equals(licenseType))
 				.map(mapperService::toResponseDTO).collect(Collectors.toList());
 
 		response.setData(list);
@@ -373,10 +398,10 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	}
 
 	@Override
-	public ResponseDTO<List<RequestResponseDTO>> pendingRequest() {
+	public ResponseDTO<List<RequestResponseDTO>> pendingRequest(LicenseType licenseType) {
 		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
 		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
-				.filter(t -> t.getStatus().equals(Status.PENDING)).map(mapperService::toResponseDTO)
+				.filter(t -> t.getStatus().equals(Status.PENDING) && t.getLicenseDetails().getLicenseType().equals(licenseType)).map(mapperService::toResponseDTO)
 				.collect(Collectors.toList());
 
 		response.setData(list);
@@ -385,10 +410,10 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	}
 
 	@Override
-	public ResponseDTO<List<RequestResponseDTO>> rejectedRequest() {
+	public ResponseDTO<List<RequestResponseDTO>> rejectedRequest(LicenseType licenseType) {
 		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
 		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
-				.filter(t -> t.getStatus().equals(Status.REJECTED)).map(mapperService::toResponseDTO)
+				.filter(t -> t.getStatus().equals(Status.REJECTED) && t.getLicenseDetails().getLicenseType().equals(licenseType)).map(mapperService::toResponseDTO)
 				.collect(Collectors.toList());
 
 		response.setData(list);
@@ -397,10 +422,10 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	}
 
 	@Override
-	public ResponseDTO<List<RequestResponseDTO>> approvedRequest() {
+	public ResponseDTO<List<RequestResponseDTO>> approvedRequest(LicenseType licenseType) {
 		ResponseDTO<List<RequestResponseDTO>> response = new ResponseDTO<>();
 		List<RequestResponseDTO> list = this.getAllRequestLists().stream()
-				.filter(t -> t.getStatus().equals(Status.APPROVED)).map(mapperService::toResponseDTO)
+				.filter(t -> t.getStatus().equals(Status.APPROVED)&& t.getLicenseDetails().getLicenseType().equals(licenseType)).map(mapperService::toResponseDTO)
 				.collect(Collectors.toList());
 
 		response.setData(list);
@@ -408,37 +433,11 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 		return response;
 	}
 
-	/* REPORT */
-
-//	@Override
-//	public Map<Month, Integer> quarterlyReport() {
-//		Month present = LocalDateTime.now().getMonth();
-//		List<RequestDetails> allActiveLicense = this.allConsumedLicense().getData();
-//		Map<Month, Integer> quarterlyReport = new HashMap<>();
-//
-//		for (int i = 0; i < 3; i++) {
-//			quarterlyReport.put(present.minus(i), 0);
-//		}
-//
-//		for (RequestDetails request : allActiveLicense) {
-//
-//			Month monthKey = request.getLicenseDetails().getLicenseStartedDate().getMonth();
-//
-//			if (quarterlyReport.containsKey(monthKey)) {
-//
-//				quarterlyReport.put(monthKey, quarterlyReport.get(monthKey) + 1);
-//
-//			}
-//
-//		}
-//
-//		return quarterlyReport;
-//	}
 
 	@Override
-	public Map<Month, List<RequestDetailsDTO>> quarterlyReport() {
+	public Map<Month, List<RequestDetailsDTO>> quarterlyReport(LicenseType licenseType) {
 		Month present = LocalDateTime.now().getMonth();
-		List<RequestDetails> allActiveLicense = this.allConsumedLicense().getData();
+		List<RequestDetails> allActiveLicense = this.allConsumedLicense(licenseType).getData();
 
 		Map<Month, List<RequestDetailsDTO>> quarterlyReport = new HashMap<>();
 
@@ -465,10 +464,10 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	}
 
 	@Override
-	public Map<Month, List<RequestDetailsDTO>> quarterlyReportBYBU(String BU) {
+	public Map<Month, List<RequestDetailsDTO>> quarterlyReportBYBU(String BU,LicenseType licenseType) {
 	bUdetailsRepository.findByBu(BU).orElseThrow(()->new RuntimeException("bu not found"));
 		Month present = LocalDateTime.now().getMonth();
-		 List<RequestDetails> allActiveLicense = this.allConsumedLicense()
+		 List<RequestDetails> allActiveLicense = this.allConsumedLicense(licenseType)
 			        .getData()
 			        .stream()
 			        .filter(req -> req.getRequestHeader().getBuDetails().getBu().equalsIgnoreCase(BU))
@@ -499,13 +498,13 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 	}
 
 	@Override
-	public Map<Month, List<RequestDetailsDTO>> annualReport() {
+	public Map<Month, List<RequestDetailsDTO>> annualReport( LicenseType licenseType) {
 		Map<Month, List<RequestDetailsDTO>> annualReport = new LinkedHashMap<>();
 
 		for (Month month : Month.values()) {
 			annualReport.put(month, new ArrayList<>());
 		}
-		List<RequestDetails> allActiveLicense = this.allConsumedLicense().getData();
+		List<RequestDetails> allActiveLicense = this.allConsumedLicense(licenseType).getData();
 
 		for (RequestDetails request : allActiveLicense) {
 
@@ -527,7 +526,7 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 
 	@Scheduled(fixedDelay = 43200000)
 	private void updateLicenseStatus() {
-		List<RequestDetails> activeLicenses = this.allConsumedLicense().getData();
+		List<RequestDetails> activeLicenses = this.allConsumed().getData();
 
 		if (!activeLicenses.isEmpty())
 			activeLicenses.forEach(license -> {
@@ -549,4 +548,5 @@ public class RequestHeaderServiceImplement implements RequestHeaderService {
 
 	}
 
+	
 }

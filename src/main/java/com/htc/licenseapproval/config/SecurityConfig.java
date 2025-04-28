@@ -59,14 +59,13 @@ public class SecurityConfig {
 	            ).permitAll()
 	            .requestMatchers("/auth/deleteUser").authenticated()
 	            .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-	            .anyRequest().authenticated()
+	            .anyRequest().permitAll()
 	        )
 	        .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 	        .cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
 	    return http.build();
 	}
-
 
 	@Bean	
 	AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -84,10 +83,10 @@ public class SecurityConfig {
 	    source.registerCorsConfiguration("/**", configuration);
 	    return source;
 	}
-	
+
 	@Bean
     AuditorAware<String> auditorAware(){
 		return new ApplicationAuditAware();
 	}
-	
+
 }

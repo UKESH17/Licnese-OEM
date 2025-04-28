@@ -227,7 +227,7 @@ public class AuthController {
 			HttpServletRequest request) {
 		UserCredentials userCredentials = userService.findByUsername(username);
 		if (otpService.validateOTP(OTP, username) && userCredentials.isOTPenabled()) {
-			
+			System.out.println("OTP");
 			UserDetails userDetails = userService.loadUserByUsername(username);
 			UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
 					userDetails, null, userDetails.getAuthorities());
@@ -257,9 +257,6 @@ public class AuthController {
 		response.setData("Invalid OTP");
 		response.setMessage("Login - otp verification");
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-
-	
-
 	}
 
 	@PostMapping("/forgotpassword")
@@ -309,7 +306,7 @@ public class AuthController {
 			if (credentials != null) {
 				
 				UserLog userLog = UserLog.builder()
-						.logDetails(String.format(LogMessages.OTP_VERIFIED, credentials.getUsername()))
+						.logDetails(String.format(LogMessages.OTP_VERIFIED, credentials.getUsername())+"-> Password Changed")
 						.loggedTime(LocalDateTime.now())
 						.build();
 
@@ -365,8 +362,6 @@ public class AuthController {
 		response.setMessage("Logged out");
 					
 		return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
-		
-	
 	}
 	
 	@GetMapping("/{username}")

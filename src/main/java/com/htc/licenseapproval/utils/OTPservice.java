@@ -77,6 +77,7 @@ public class OTPservice {
     	if(otps!= null) {
     	for(OTP otp : otps) {
     		if(otp.getExpiryAt().isBefore(LocalDateTime.now())) {
+    			System.out.println("otp deleted");
     			UserCredentials user =otp.getUser();
         		user.setOTPenabled(false);
         		userCredentialsRepository.save(user);
@@ -84,7 +85,7 @@ public class OTPservice {
         		
     		}
     	}
-    	}
+    }
     }
     
     

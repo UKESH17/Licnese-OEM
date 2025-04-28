@@ -20,5 +20,4 @@ public class LicenseApprovalApplication {
     ModelMapper modelMapper() {
 		return new ModelMapper();
 	}
-
 }
