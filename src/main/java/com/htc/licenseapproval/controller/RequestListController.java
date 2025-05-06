@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -46,7 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @Slf4j
 @RequestMapping("/licenseApproval/approvalRequest")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173",allowCredentials = "true")
 @Tag(name = "License Approval Request APIs-RequestListController", description = "Endpoints for handling license approval requests")
 public class RequestListController {
 
@@ -64,6 +65,8 @@ public class RequestListController {
 	
 	@Autowired
 	private BUdetailsRepository buRepository;
+	
+	
 	
 	
 	@Operation(summary = "Create new license request", description = "Submit a new license request with approval mail and optional Excel file")
@@ -147,8 +150,7 @@ public class RequestListController {
 		    @PathVariable String requestDetailsId,
 		    @RequestPart(value="course-JSON") String coursesDTOjson,
 		    @RequestPart(value="certificates",required = false) MultipartFile[] files
-		) 
-			throws IOException {
+		) throws IOException {
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		CoursesDTO coursesDTOs = objectMapper.readValue(coursesDTOjson, CoursesDTO.class);
@@ -202,5 +204,11 @@ public class RequestListController {
 		response.setCode(HttpStatus.CREATED.value());
 		
 		return new ResponseEntity<>(response, HttpStatus.CREATED);
-	} 
+	}
+	
+	@DeleteMapping("/delete/bu")
+	public String deleteBu(String name) {
+		buRepository.delete(buRepository.findByBu(name).get());
+		return "success";
+	}
 }

@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/licenseApproval/approvalRequest")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173",allowCredentials = "true")
 @Tag(name = "File Download APIs", description = "For downloading files")
 public class FileDownloadController {
 

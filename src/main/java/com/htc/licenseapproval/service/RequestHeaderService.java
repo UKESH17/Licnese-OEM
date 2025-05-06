@@ -36,8 +36,6 @@ public interface RequestHeaderService {
 
 	public ResponseDTO<List<RequestResponseDTO>> totalRequestsByEmp(Long empid);
 	
-	
-	
 	public ResponseDTO<List<RequestResponseDTO>> allActiveLicense( LicenseType licenseType);
 
 	public ResponseDTO<List<RequestResponseDTO>> allPendingLicense( LicenseType licenseType);
@@ -52,17 +50,19 @@ public interface RequestHeaderService {
 
 	public ResponseDTO<List<RequestResponseDTO>> approvedRequest( LicenseType licenseType);
 
-	public Map<Month, List<RequestDetailsDTO>> quarterlyReport( LicenseType licenseType);
+	public Map<Month, List<RequestResponseDTO>> quarterlyReport( LicenseType licenseType);
 
-	public Map<Month, List<RequestDetailsDTO>> annualReport( LicenseType licenseType);
+	public Map<Month, List<RequestResponseDTO>> annualReport( LicenseType licenseType);
 
-	Map<Month, List<RequestDetailsDTO>> quarterlyReportBYBU(String BU, LicenseType licenseType);
-
-	ResponseDTO<List<RequestResponseDTO>> totalRequestPerBU(String name, LicenseType licenseType);
+	public Map<Month, List<RequestResponseDTO>> quarterlyReportBYBU(String BU, LicenseType licenseType);
 	
-	
-	//Map<String, List<RequestDetailsDTO>> quarterlyReportByBU();
+	public Map<Month, Map<String, List<RequestDetailsDTO>>> quarterlyReportPerBU(LicenseType licenseType);
 
+	public ResponseDTO<List<RequestResponseDTO>> totalRequestPerBU(String name, LicenseType licenseType);
+	
+	public  Map<String, ResponseDTO<List<RequestResponseDTO>>> totalRequestForAllBUs(LicenseType licenseType);
+
+	public ResponseDTO<List<RequestDetails>> allConsumedLicense(LicenseType licenseType);
 	
 
 }

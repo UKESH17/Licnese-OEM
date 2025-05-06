@@ -45,7 +45,9 @@ import com.htc.licenseapproval.utils.OTPservice;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/auth")
 @Slf4j
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173",allowCredentials = "true")
 @Tag(name = "Authentication Controller", description = "APIs for handling users login and singup")
 public class AuthController {
 
@@ -224,29 +226,36 @@ public class AuthController {
 
 	@PostMapping("/login/otpVerification")
 	public ResponseEntity<BaseResponse<String>> otpVerification(@RequestParam String OTP, @RequestParam String username,
-			HttpServletRequest request) {
+			HttpServletRequest request,	HttpServletResponse httpresponse) {
 		UserCredentials userCredentials = userService.findByUsername(username);
 		if (otpService.validateOTP(OTP, username) && userCredentials.isOTPenabled()) {
-			System.out.println("OTP");
 			UserDetails userDetails = userService.loadUserByUsername(username);
 			UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
 					userDetails, null, userDetails.getAuthorities());
 			authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 			SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+			
 			request.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 			request.getSession(true).setMaxInactiveInterval(30*60);
 			UserLog userLog = UserLog.builder ()
 					.logDetails(String.format(LogMessages.OTP_VERIFIED, userCredentials.getEmail()))
 					.loggedTime(LocalDateTime.now())
 					.build();
-
 			logRepository.save(userLog);
 			otpService.removeOtp(username);
+			
+			Cookie cookie = new Cookie("Session-Id",request.getSession().getId());
+			cookie.setHttpOnly(true); // MUST be false if you want JS access (default is true)
+			cookie.setPath("/");
+			cookie.setSecure(false); // only if you're using HTTPS
+			cookie.setMaxAge(30 * 60); // optional
+			httpresponse.addCookie(cookie);
+			
 			log.info("OTP verified successfully");
 			BaseResponse<String> response = new BaseResponse<>();
 			response.setCode(HttpStatus.ACCEPTED.value());
-			response.setData("OTP verified successfully ");
-			response.setMessage("Login - otp verification");
+			response.setData(request.getSession().getId());
+			response.setMessage("Login otp verification -> successful");
 			
 			return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
 
@@ -255,7 +264,7 @@ public class AuthController {
 		BaseResponse<String> response = new BaseResponse<>();
 		response.setCode(HttpStatus.UNAUTHORIZED.value());
 		response.setData("Invalid OTP");
-		response.setMessage("Login - otp verification");
+		response.setMessage("Login otp verification -> failed");
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
 	}
 
@@ -338,11 +347,22 @@ public class AuthController {
 	}
 
 	@PostMapping("/logout")
-	public ResponseEntity<BaseResponse<String>> logout(HttpServletRequest request) {
+	public ResponseEntity<BaseResponse<String>> logout(HttpServletRequest request, HttpServletResponse httpresponse) {
 		
 		String username = SecurityContextHolder.getContext().getAuthentication().getName();
 		
 		HttpSession session = request.getSession(false);
+		Cookie[] cookies = request.getCookies();
+		if (cookies != null) {
+		    for (Cookie cook : cookies) {
+		        if ("Session-Id".equals(cook.getName()) || "JSESSIONID".equals(cook.getName()) ) {
+		            cook.setValue(null);
+		            cook.setMaxAge(0);
+		            cook.setPath("/");
+		            httpresponse.addCookie(cook);
+		        }
+		    }
+		}
 		
 		if (session != null) {
 			session.invalidate();

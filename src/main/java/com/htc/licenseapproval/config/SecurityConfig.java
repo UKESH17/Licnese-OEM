@@ -73,12 +73,14 @@ public class SecurityConfig {
 	}
 	
 	@Bean
-	 CorsConfigurationSource corsConfigurationSource() {
+	CorsConfigurationSource corsConfigurationSource() {
 	    CorsConfiguration configuration = new CorsConfiguration();
-	    configuration.addAllowedOrigin("http://localhost:5173"); 
-	    configuration.addAllowedMethod("*"); 
-	    configuration.addAllowedHeader("*"); 
-	    configuration.setAllowCredentials(true);
+	    configuration.addAllowedOrigin("http://localhost:5173");  // React URL
+	    configuration.addAllowedMethod("*");  // Allows all methods (GET, POST, etc.)
+	    configuration.addAllowedHeader("*");  // Allows all headers
+	    configuration.setAllowCredentials(true);  // Necessary to allow sending cookies
+	    configuration.addExposedHeader("Authorization"); // Expose the Authorization header (if needed)
+	    configuration.addExposedHeader("Set-Cookie");  // Expose the Set-Cookie header (to see session cookies)
 	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 	    source.registerCorsConfiguration("/**", configuration);
 	    return source;

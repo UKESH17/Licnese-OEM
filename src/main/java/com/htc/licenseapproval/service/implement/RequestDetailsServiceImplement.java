@@ -41,6 +41,9 @@ public class RequestDetailsServiceImplement implements RequestDetailsService {
 
 	@Autowired
 	private UploadedFileRepository uploadedFileRepository;
+	
+	@Autowired 
+	private RequestHeaderServiceImplement headerServiceImplement;
 
 	@Autowired
 	private Compressor compressor;
@@ -107,7 +110,7 @@ public class RequestDetailsServiceImplement implements RequestDetailsService {
 		RequestDetails request =requestDetailsRepository.save(requestDetails);
 	
 		licenseLogMessagesRepository.save(logMessages);
-		
+		headerServiceImplement.updateLicenseStatus();
 		return mapperService.toResponseDTO(request);
 	}
 

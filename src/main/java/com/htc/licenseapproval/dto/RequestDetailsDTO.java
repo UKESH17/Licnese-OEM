@@ -9,13 +9,7 @@ import lombok.Data;
 
 @Data
 public class RequestDetailsDTO {
-	
-	private String requestHeaderId;
-	private String requestorName;
-	private RequestType requestType;
-	private BUdetailsDTO buDetails;
-	private String approvedBy;
-	
+
 	private String requestId;
 	private Long empid;
 	private String empname;
